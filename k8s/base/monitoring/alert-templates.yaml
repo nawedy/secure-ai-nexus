@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alert-templates
+  namespace: secureai
+data:
+  slack.tmpl: |
+    {{ define "slack.title" }}
+    [{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}
+    {{ end }}
+
+    {{ define "slack.text" }}
+    *Alert:* {{ .GroupLabels.alertname }}
+    *Severity:* {{ .GroupLabels.severity }}
+    *Status:* {{ .Status }}
+    *Description:* {{ .CommonAnnotations.description }}
+    *Details:*
+    {{ range .Alerts }}
+      {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
+      {{ end }}
+    {{ end }}
+    {{ end }}
+
+  pagerduty.tmpl: |
+    {{ define "pagerduty.description" }}
+    [{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}
+    Severity: {{ .GroupLabels.severity }}
+    Description: {{ .CommonAnnotations.description }}
+    {{ end }}

@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alert-channels-config
+  namespace: secureai
+type: Opaque
+stringData:
+  teams-webhook: "https://outlook.office.com/webhook/..."
+  opsgenie-api-key: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  twilio-account-sid: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  twilio-auth-token: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  telegram-bot-token: "123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+  telegram-chat-id: "-100123456789"
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: AlertmanagerConfig
+metadata:
+  name: additional-alert-channels
+  namespace: secureai
+spec:
+  receivers:
+  - name: 'teams-notifications'
+    webhookConfigs:
+    - url:
+        key: teams-webhook
+        name: alert-channels-config
+      sendResolved: true
+
+  - name: 'opsgenie-critical'
+    opsgenieConfigs:
+    - apiKey:
+        key: opsgenie-api-key
+        name: alert-channels-config
+      priority: P1
+      message: '{{ template "opsgenie.message" . }}'
+      description: '{{ template "opsgenie.description" . }}'
+      tags: ['{{ .GroupLabels.severity }}', '{{ .GroupLabels.alertname }}']
+
+  - name: 'sms-alerts'
+    webhookConfigs:
+    - url: 'http://twilio-gateway:8080/send-sms'
+      httpConfig:
+        basicAuth:
+          username:
+            key: twilio-account-sid
+            name: alert-channels-config
+          password:
+            key: twilio-auth-token
+            name: alert-channels-config
+
+  - name: 'telegram-alerts'
+    webhookConfigs:
+    - url: 'https://api.telegram.org/bot{{ .ExternalURL }}/sendMessage'
+      httpConfig:
+        authorization:
+          credentials:
+            key: telegram-bot-token
+            name: alert-channels-config
+      queryParams:
+        chat_id:
+          key: telegram-chat-id
+          name: alert-channels-config

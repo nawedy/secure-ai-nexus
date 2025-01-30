@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: model-backup
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: model-backup
+            image: ghcr.io/your-repo/secureai-platform:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Backup model files and metadata
+              tar -czf /backups/models-$(date +%Y%m%d).tar.gz /app/model-cache
+              # Upload to cloud storage
+              gsutil cp /backups/*.tar.gz gs://secureai-backups/models/
+            volumeMounts:
+            - name: model-cache
+              mountPath: /app/model-cache
+              readOnly: true
+            - name: backup-volume
+              mountPath: /backups
+            env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /secrets/backup-sa/credentials.json
+          volumes:
+          - name: model-cache
+            persistentVolumeClaim:
+              claimName: model-cache-pvc
+          - name: backup-volume
+            emptyDir: {}
+          - name: backup-credentials
+            secret:
+              secretName: backup-sa-credentials
+          restartPolicy: OnFailure 

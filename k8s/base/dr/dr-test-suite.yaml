@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dr-test-suite
+  namespace: secureai
+data:
+  test-scenarios.yaml: |
+    scenarios:
+      - name: "complete-region-failover"
+        description: "Test complete region failover process"
+        priority: critical
+        steps:
+          - name: "pre-failover-validation"
+            actions:
+              - type: "health-check"
+                target: "primary-region"
+              - type: "backup-verification"
+                type: "latest"
+              - type: "replication-status"
+                min_sync: 99.9
+
+          - name: "simulate-failure"
+            actions:
+              - type: "network-partition"
+                target: "primary-region"
+                duration: "10m"
+              - type: "verify-detection"
+                timeout: "2m"
+
+          - name: "failover-execution"
+            actions:
+              - type: "trigger-failover"
+                target: "dr-region"
+                mode: "automatic"
+              - type: "verify-dns-switch"
+                timeout: "5m"
+              - type: "verify-traffic-routing"
+                success_rate: 99.9
+
+          - name: "post-failover-validation"
+            actions:
+              - type: "service-health-check"
+                target: "dr-region"
+              - type: "data-consistency-check"
+                level: "full"
+              - type: "performance-validation"
+                latency_threshold: "200ms"
+
+      - name: "partial-service-recovery"
+        description: "Test recovery of specific services"
+        priority: high
+        steps:
+          - name: "service-isolation"
+            actions:
+              - type: "isolate-service"
+                service: "model-inference"
+              - type: "verify-isolation"
+                timeout: "1m"
+
+          - name: "service-recovery"
+            actions:
+              - type: "restore-service"
+                target: "dr-region"
+                service: "model-inference"
+              - type: "verify-service"
+                checks: ["health", "performance", "data"]

@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: secureai-platform
+  namespace: secureai
+spec:
+  minAvailable: "50%"
+  selector:
+    matchLabels:
+      app: secureai-platform

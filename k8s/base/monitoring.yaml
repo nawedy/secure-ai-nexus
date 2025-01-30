@@ -1,0 +1,32 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: secureai-platform
+spec:
+  selector:
+    matchLabels:
+      app: secureai-platform
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+data:
+  alert.rules: |
+    groups:
+    - name: secureai.rules
+      rules:
+      - alert: HighLatency
+        expr: rate(model_request_latency_seconds_bucket{le="0.5"}[5m]) < 0.95
+        for: 5m
+        labels:
+          severity: warning
+      - alert: HighErrorRate
+        expr: rate(model_request_total{status="error"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical 

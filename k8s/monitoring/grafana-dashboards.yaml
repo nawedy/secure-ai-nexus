@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+data:
+  model-performance.json: |
+    {
+      "dashboard": {
+        "title": "SecureAI Platform - Model Performance",
+        "panels": [
+          {
+            "title": "Request Latency",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(model_request_latency_seconds_sum[5m]) / rate(model_request_latency_seconds_count[5m])",
+                "legendFormat": "{{model_name}}"
+              }
+            ]
+          },
+          {
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(model_request_total[5m])) by (model_name, status)",
+                "legendFormat": "{{model_name}} - {{status}}"
+              }
+            ]
+          },
+          {
+            "title": "GPU Memory Usage",
+            "type": "gauge",
+            "targets": [
+              {
+                "expr": "gpu_memory_usage_bytes",
+                "legendFormat": "{{model_name}} - {{device}}"
+              }
+            ]
+          },
+          {
+            "title": "Model Load Times",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "model_load_time_seconds",
+                "legendFormat": "{{model_name}}"
+              }
+            ]
+          }
+        ]
+      }
+    } 

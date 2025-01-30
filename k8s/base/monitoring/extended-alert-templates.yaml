@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: extended-alert-templates
+  namespace: secureai
+data:
+  teams.tmpl: |
+    {{ define "teams.card" }}
+    {
+      "@type": "MessageCard",
+      "@context": "http://schema.org/extensions",
+      "themeColor": "{{ if eq .Status "firing" }}FF0000{{ else }}00FF00{{ end }}",
+      "summary": "{{ .GroupLabels.alertname }}",
+      "sections": [{
+        "activityTitle": "{{ .GroupLabels.alertname }}",
+        "activitySubtitle": "Status: {{ .Status | toUpper }}",
+        "facts": [
+          {
+            "name": "Severity",
+            "value": "{{ .GroupLabels.severity }}"
+          },
+          {
+            "name": "Description",
+            "value": "{{ .CommonAnnotations.description }}"
+          }
+        ],
+        "markdown": true
+      }]
+    }
+    {{ end }}
+
+  opsgenie.tmpl: |
+    {{ define "opsgenie.message" }}
+    [{{ .Status | toUpper }}] {{ .GroupLabels.alertname }} - {{ .CommonAnnotations.summary }}
+    {{ end }}
+
+    {{ define "opsgenie.description" }}
+    Alert Details:
+    - Status: {{ .Status }}
+    - Severity: {{ .GroupLabels.severity }}
+    - Description: {{ .CommonAnnotations.description }}
+
+    Affected Resources:
+    {{ range .Alerts }}
+    {{ range .Labels.SortedPairs }}
+    - {{ .Name }}: {{ .Value }}
+    {{ end }}
+    {{ end }}
+    {{ end }}
+
+  sms.tmpl: |
+    {{ define "sms.message" }}
+    {{ .Status | toUpper }}: {{ .GroupLabels.alertname }}
+    Severity: {{ .GroupLabels.severity }}
+    {{ .CommonAnnotations.description }}
+    {{ end }}

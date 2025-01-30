@@ -1,0 +1,43 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: compliance-monitor
+  namespace: secureai
+spec:
+  selector:
+    matchLabels:
+      app: evidence-collector
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: compliance-alerts
+  namespace: secureai
+spec:
+  groups:
+  - name: compliance.rules
+    rules:
+    - alert: ComplianceEvidenceMissing
+      expr: |
+        compliance_evidence_collection_status == 0
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: Compliance evidence collection failure
+        description: Evidence collection has failed for more than 1 hour
+
+    - alert: ComplianceControlFailure
+      expr: |
+        compliance_control_status{control_id=~"AC-.*|DP-.*"} == 0
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Compliance control failure
+        description: One or more compliance controls have failed

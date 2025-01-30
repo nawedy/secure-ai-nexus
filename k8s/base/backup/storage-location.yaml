@@ -1,0 +1,13 @@
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: azure-backup
+  namespace: velero
+spec:
+  provider: azure
+  objectStorage:
+    bucket: secureai-backups
+  config:
+    resourceGroup: secureai-rg
+    storageAccount: secureaibackup
+    subscriptionId: ${AZURE_SUBSCRIPTION_ID}

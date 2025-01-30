@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-dr-dashboard
+  namespace: secureai
+  labels:
+    grafana_dashboard: "true"
+data:
+  backup-dr-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "Backup & DR Status",
+        "panels": [
+          {
+            "title": "Backup Success Rate",
+            "type": "gauge",
+            "gridPos": {"x": 0, "y": 0, "w": 6, "h": 6},
+            "targets": [
+              {
+                "expr": "sum(rate(velero_backup_success_total[24h])) / sum(rate(velero_backup_total[24h])) * 100"
+              }
+            ]
+          },
+          {
+            "title": "Replication Lag",
+            "type": "graph",
+            "gridPos": {"x": 6, "y": 0, "w": 6, "h": 6},
+            "targets": [
+              {
+                "expr": "dr_replication_lag_seconds"
+              }
+            ]
+          },
+          {
+            "title": "DR Test Results",
+            "type": "table",
+            "gridPos": {"x": 12, "y": 0, "w": 12, "h": 6},
+            "targets": [
+              {
+                "expr": "dr_test_results"
+              }
+            ]
+          }
+        ]
+      }
+    }

@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-verification
+spec:
+  schedule: "0 3 * * *"  # Daily at 3 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup-verify
+            image: ghcr.io/your-repo/secureai-platform:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Verify latest backup integrity
+              LATEST_BACKUP=$(gsutil ls gs://secureai-backups/models/ | sort | tail -n 1)
+              gsutil cp ${LATEST_BACKUP} /tmp/backup.tar.gz
+              tar -tzf /tmp/backup.tar.gz >/dev/null
+              
+              # Check model files
+              tar -xzf /tmp/backup.tar.gz -C /tmp
+              python3 scripts/verify_models.py /tmp/app/model-cache
+            env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /secrets/backup-sa/credentials.json
+          restartPolicy: OnFailure 

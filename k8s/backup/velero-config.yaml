@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: velero-config
+data:
+  backup-schedule: "0 1 * * *"  # Daily at 1 AM
+  retention-period: "720h"      # 30 days
+  excluded-namespaces: "kube-system,monitoring"
+  included-resources: "*"
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: secureai-daily-backup
+spec:
+  schedule: "0 1 * * *"
+  template:
+    includedNamespaces:
+    - secureai-prod
+    - secureai-staging
+    includedResources:
+    - "*"
+    storageLocation: default
+    volumeSnapshotLocations:
+    - default
+    ttl: 720h 

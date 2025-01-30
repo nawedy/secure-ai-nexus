@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dr-test-executor
+  namespace: secureai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dr-test-executor
+  template:
+    metadata:
+      labels:
+        app: dr-test-executor
+    spec:
+      serviceAccountName: dr-test-executor
+      containers:
+      - name: executor
+        image: secureairegistry.azurecr.io/dr-test-executor:latest
+        securityContext:
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
+        env:
+        - name: TEST_CONFIG
+          value: /etc/dr-test/test-scenarios.yaml
+        - name: AZURE_TENANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: azure-credentials
+              key: tenant-id
+        - name: AZURE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: azure-credentials
+              key: client-id
+        - name: AZURE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: azure-credentials
+              key: client-secret
+        volumeMounts:
+        - name: test-config
+          mountPath: /etc/dr-test
+          readOnly: true
+        - name: results
+          mountPath: /var/log/dr-test
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 60
+      volumes:
+      - name: test-config
+        configMap:
+          name: dr-test-suite
+      - name: results
+        persistentVolumeClaim:
+          claimName: dr-test-results

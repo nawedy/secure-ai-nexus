@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard-updater
+  namespace: secureai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dashboard-updater
+  template:
+    metadata:
+      labels:
+        app: dashboard-updater
+    spec:
+      containers:
+      - name: updater
+        image: secureairegistry.azurecr.io/dashboard-updater:latest
+        env:
+        - name: GRAFANA_URL
+          value: http://grafana:3000
+        - name: GRAFANA_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: grafana-credentials
+              key: api-key
+        volumeMounts:
+        - name: dashboard-templates
+          mountPath: /etc/grafana/dashboards
+      volumes:
+      - name: dashboard-templates
+        configMap:
+          name: custom-dashboards

@@ -1,0 +1,43 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dr-test-monitor
+  namespace: secureai
+spec:
+  selector:
+    matchLabels:
+      app: dr-test-executor
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: dr-test-alerts
+  namespace: secureai
+spec:
+  groups:
+  - name: dr.test.rules
+    rules:
+    - alert: DRTestFailure
+      expr: |
+        dr_test_success{scenario="complete-region-failover"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: DR test failure detected
+        description: Complete region failover test has failed
+
+    - alert: FailoverTimeTooLong
+      expr: |
+        dr_failover_duration_seconds > 300
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Failover taking too long
+        description: Region failover is taking longer than expected threshold

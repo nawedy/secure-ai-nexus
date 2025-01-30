@@ -1,0 +1,38 @@
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+*.egg-info/
+
+# Logs
+logs/
+*.log
+
+# Development
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+tests/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Documentation
+docs/
+*.md
+
+# Local development
+docker-compose.yml
+docker-compose.*.yml

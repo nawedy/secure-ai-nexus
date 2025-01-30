@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dr-test-reporter
+  namespace: secureai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dr-test-reporter
+  template:
+    metadata:
+      labels:
+        app: dr-test-reporter
+    spec:
+      containers:
+      - name: reporter
+        image: secureairegistry.azurecr.io/dr-test-reporter:latest
+        env:
+        - name: REPORT_INTERVAL
+          value: "24h"
+        - name: REPORT_RECIPIENTS
+          value: "team@secureai.example.com"
+        - name: SMTP_HOST
+          valueFrom:
+            secretKeyRef:
+              name: smtp-credentials
+              key: host
+        - name: SMTP_CREDENTIALS
+          valueFrom:
+            secretKeyRef:
+              name: smtp-credentials
+              key: credentials
+        volumeMounts:
+        - name: test-results
+          mountPath: /var/log/dr-test
+          readOnly: true
+      volumes:
+      - name: test-results
+        persistentVolumeClaim:
+          claimName: dr-test-results

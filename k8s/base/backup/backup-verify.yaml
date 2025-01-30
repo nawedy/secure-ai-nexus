@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-verification
+  namespace: secureai
+spec:
+  schedule: "0 3 * * *"  # Daily at 3 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup-verify
+            image: secureairegistry.azurecr.io/backup-verify:latest
+            env:
+            - name: BACKUP_STORAGE
+              value: azure-backup
+            - name: AZURE_STORAGE_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: azure-backup-creds
+                  key: storage-account
+            - name: AZURE_STORAGE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: azure-backup-creds
+                  key: storage-key
+            command:
+            - /scripts/verify-backup.sh
+          restartPolicy: OnFailure

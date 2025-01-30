@@ -1,0 +1,139 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-dashboards
+  namespace: secureai
+  labels:
+    grafana_dashboard: "true"
+data:
+  security-overview.json: |
+    {
+      "dashboard": {
+        "title": "Security Overview",
+        "refresh": "1m",
+        "panels": [
+          {
+            "title": "Security Incidents",
+            "type": "stat",
+            "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+            "targets": [
+              {
+                "expr": "sum(increase(security_incidents_total[24h]))",
+                "legendFormat": "24h Incidents"
+              }
+            ],
+            "thresholds": {
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 5, "color": "yellow" },
+                { "value": 10, "color": "red" }
+              ]
+            }
+          },
+          {
+            "title": "Authentication Status",
+            "type": "gauge",
+            "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+            "targets": [
+              {
+                "expr": "sum(rate(authentication_success_total[5m])) / sum(rate(authentication_attempts_total[5m])) * 100"
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+  model-security.json: |
+    {
+      "dashboard": {
+        "title": "Model Security Metrics",
+        "refresh": "5m",
+        "panels": [
+          {
+            "title": "Model Validation Results",
+            "type": "timeseries",
+            "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+            "targets": [
+              {
+                "expr": "sum by (result) (rate(model_validation_total[1h]))",
+                "legendFormat": "{{result}}"
+              }
+            ]
+          },
+          {
+            "title": "Security Scan Scores",
+            "type": "heatmap",
+            "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+            "targets": [
+              {
+                "expr": "model_security_score"
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+  performance-metrics.json: |
+    {
+      "dashboard": {
+        "title": "System Performance",
+        "refresh": "30s",
+        "panels": [
+          {
+            "title": "API Latency",
+            "type": "graph",
+            "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+                "legendFormat": "95th Percentile"
+              }
+            ]
+          },
+          {
+            "title": "Resource Usage",
+            "type": "bargauge",
+            "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+            "targets": [
+              {
+                "expr": "sum by (container) (container_memory_usage_bytes{namespace='secureai'})",
+                "legendFormat": "{{container}}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+  compliance-monitoring.json: |
+    {
+      "dashboard": {
+        "title": "Compliance Metrics",
+        "refresh": "5m",
+        "panels": [
+          {
+            "title": "Data Protection Status",
+            "type": "stat",
+            "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4},
+            "targets": [
+              {
+                "expr": "sum(encryption_status{namespace='secureai'})",
+                "legendFormat": "Encrypted Data"
+              }
+            ]
+          },
+          {
+            "title": "Audit Log Coverage",
+            "type": "gauge",
+            "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
+            "targets": [
+              {
+                "expr": "sum(audit_log_coverage{namespace='secureai'}) / count(audit_log_coverage{namespace='secureai'}) * 100"
+              }
+            ]
+          }
+        ]
+      }
+    }

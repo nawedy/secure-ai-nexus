@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backup-validator
+  namespace: secureai
+spec:
+  selector:
+    app: backup-validator
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backup-validator
+  namespace: secureai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backup-validator
+  template:
+    metadata:
+      labels:
+        app: backup-validator
+    spec:
+      containers:
+      - name: validator
+        image: secureairegistry.azurecr.io/backup-validator:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AZURE_STORAGE_ACCOUNT
+          valueFrom:
+            secretKeyRef:
+              name: azure-backup-creds
+              key: storage-account
+        - name: AZURE_STORAGE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: azure-backup-creds
+              key: storage-key
+        volumeMounts:
+        - name: validation-config
+          mountPath: /etc/backup-validation
+        - name: validation-results
+          mountPath: /var/log/validation
+      volumes:
+      - name: validation-config
+        configMap:
+          name: backup-validation-config
+      - name: validation-results
+        persistentVolumeClaim:
+          claimName: backup-validation-results

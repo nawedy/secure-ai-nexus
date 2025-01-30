@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dr-test
+  namespace: secureai
+spec:
+  schedule: "0 0 * * 0"  # Weekly on Sunday at midnight
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: dr-test
+            image: secureairegistry.azurecr.io/dr-test:latest
+            env:
+            - name: PRIMARY_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: dr-config
+                  key: primary-region
+            - name: DR_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: dr-config
+                  key: dr-region
+            command:
+            - /scripts/test-dr.sh
+          restartPolicy: OnFailure

@@ -1,0 +1,53 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backup-validation-metrics
+  namespace: secureai
+spec:
+  selector:
+    matchLabels:
+      app: backup-validator
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: backup-validation-alerts
+  namespace: secureai
+spec:
+  groups:
+  - name: backup.validation.rules
+    rules:
+    - alert: BackupValidationFailure
+      expr: |
+        backup_validation_success{job="backup-validator"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Backup validation failed
+        description: Backup validation has failed for the last 5 minutes
+
+    - alert: ValidationDurationTooLong
+      expr: |
+        backup_validation_duration_seconds > 3600
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Validation taking too long
+        description: Backup validation is taking longer than expected (>1h)
+
+    - alert: HighValidationErrorRate
+      expr: |
+        rate(backup_validation_errors_total[5m]) > 0.1
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: High validation error rate
+        description: Backup validation is experiencing a high error rate

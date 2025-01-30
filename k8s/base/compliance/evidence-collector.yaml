@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evidence-collector
+  namespace: secureai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evidence-collector
+  template:
+    metadata:
+      labels:
+        app: evidence-collector
+    spec:
+      containers:
+      - name: collector
+        image: secureairegistry.azurecr.io/evidence-collector:latest
+        env:
+        - name: COLLECTION_INTERVAL
+          value: "1h"
+        - name: EVIDENCE_RETENTION
+          value: "365d"
+        - name: AZURE_CREDENTIALS
+          valueFrom:
+            secretKeyRef:
+              name: azure-credentials
+              key: json-credentials
+        volumeMounts:
+        - name: evidence
+          mountPath: /var/compliance/evidence
+      volumes:
+      - name: evidence
+        persistentVolumeClaim:
+          claimName: compliance-evidence

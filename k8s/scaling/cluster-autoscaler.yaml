@@ -1,0 +1,22 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: ClusterAutoscaler
+metadata:
+  name: secureai-cluster-autoscaler
+spec:
+  scaleDown:
+    enabled: true
+    delayAfterAdd: 10m
+    delayAfterDelete: 10m
+    delayAfterFailure: 3m
+    unneededTime: 10m
+  scaleDownUnneededTime: 10m
+  maxNodeProvisionTime: 15m
+  nodeGroups:
+  - minSize: 3
+    maxSize: 20
+    name: default-pool
+  - minSize: 2
+    maxSize: 10
+    name: gpu-pool
+    labels:
+      cloud.google.com/gke-accelerator: nvidia-tesla-t4 

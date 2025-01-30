@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: secureai-platform
+  namespace: secureai
+  labels:
+    app: secureai-platform
+spec:
+  selector:
+    matchLabels:
+      app: secureai-platform
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics
+  namespaceSelector:
+    matchNames:
+    - secureai
+    - secureai-staging

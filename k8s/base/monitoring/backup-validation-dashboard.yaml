@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-validation-dashboard
+  namespace: secureai
+  labels:
+    grafana_dashboard: "true"
+data:
+  backup-validation-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "Backup Validation Status",
+        "panels": [
+          {
+            "title": "Validation Success Rate",
+            "type": "gauge",
+            "gridPos": {"x": 0, "y": 0, "w": 6, "h": 6},
+            "targets": [
+              {
+                "expr": "sum(rate(backup_validation_success[24h])) / sum(rate(backup_validation_total[24h])) * 100"
+              }
+            ]
+          },
+          {
+            "title": "Validation Duration",
+            "type": "graph",
+            "gridPos": {"x": 6, "y": 0, "w": 6, "h": 6},
+            "targets": [
+              {
+                "expr": "backup_validation_duration_seconds"
+              }
+            ]
+          },
+          {
+            "title": "Error Distribution",
+            "type": "pie",
+            "gridPos": {"x": 12, "y": 0, "w": 6, "h": 6},
+            "targets": [
+              {
+                "expr": "sum by (error_type) (backup_validation_errors_total)"
+              }
+            ]
+          },
+          {
+            "title": "Validation History",
+            "type": "table",
+            "gridPos": {"x": 0, "y": 6, "w": 24, "h": 8},
+            "targets": [
+              {
+                "expr": "backup_validation_results"
+              }
+            ]
+          }
+        ]
+      }
+    }

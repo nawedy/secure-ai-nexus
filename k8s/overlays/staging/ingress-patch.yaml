@@ -1,0 +1,11 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: secureai-platform
+spec:
+  tls:
+  - hosts:
+    - staging.api.secureai.example.com
+    secretName: secureai-staging-tls
+  rules:
+  - host: staging.api.secureai.example.com

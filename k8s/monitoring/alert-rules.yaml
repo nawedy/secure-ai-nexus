@@ -1,0 +1,42 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: secureai-alerts
+spec:
+  groups:
+  - name: model.rules
+    rules:
+    - alert: ModelHighLatency
+      expr: rate(model_request_latency_seconds_sum[5m]) / rate(model_request_latency_seconds_count[5m]) > 0.5
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High model latency detected"
+        description: "Model {{ $labels.model_name }} has high latency ({{ $value }}s)"
+
+    - alert: ModelHighErrorRate
+      expr: rate(model_request_total{status="error"}[5m]) / rate(model_request_total[5m]) > 0.05
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "High error rate detected"
+        description: "Model {{ $labels.model_name }} has high error rate ({{ $value }})"
+
+    - alert: GPUMemoryNearCapacity
+      expr: gpu_memory_usage_bytes / gpu_memory_total_bytes > 0.90
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "GPU memory near capacity"
+        description: "GPU {{ $labels.device }} memory usage is above 90%"
+
+    - alert: ModelLoadFailure
+      expr: increase(model_load_time_seconds_count{status="error"}[15m]) > 0
+      labels:
+        severity: critical
+      annotations:
+        summary: "Model load failure detected"
+        description: "Model {{ $labels.model_name }} failed to load" 

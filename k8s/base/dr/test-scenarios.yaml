@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dr-test-scenarios
+  namespace: secureai
+data:
+  scenarios.yaml: |
+    scenarios:
+      - name: "region-failure"
+        description: "Simulate primary region failure"
+        steps:
+          - action: "block-traffic"
+            target: "primary-region"
+            duration: "5m"
+          - action: "verify-failover"
+            expect: "automatic"
+            timeout: "10m"
+          - action: "verify-data"
+            consistency: "eventual"
+            timeout: "15m"
+
+      - name: "network-partition"
+        description: "Simulate network partition between regions"
+        steps:
+          - action: "network-partition"
+            between: ["primary-region", "dr-region"]
+            duration: "10m"
+          - action: "verify-replication"
+            expect: "queue-buildup"
+          - action: "restore-network"
+          - action: "verify-sync"
+            timeout: "15m"
+
+      - name: "data-corruption"
+        description: "Test recovery from data corruption"
+        steps:
+          - action: "corrupt-data"
+            target: "primary-db"
+            percentage: 0.1
+          - action: "verify-detection"
+            timeout: "5m"
+          - action: "verify-recovery"
+            source: "dr-region"
+            timeout: "15m"

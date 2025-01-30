@@ -1,0 +1,38 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: dr-alerts
+  namespace: secureai
+spec:
+  groups:
+  - name: dr.rules
+    rules:
+    - alert: RegionFailure
+      expr: |
+        up{region="primary"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Primary region failure detected
+        description: Primary region is not responding
+
+    - alert: ReplicationLag
+      expr: |
+        dr_replication_lag_seconds > 300
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: High replication lag detected
+        description: DR replication is lagging by more than 5 minutes
+
+    - alert: FailoverTestFailure
+      expr: |
+        increase(dr_test_failures_total[1h]) > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: DR failover test failed
+        description: Recent DR failover test has failed

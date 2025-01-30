@@ -1,0 +1,46 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: secureai-alerts
+  namespace: secureai
+spec:
+  groups:
+  - name: secureai.rules
+    rules:
+    - alert: HighErrorRate
+      expr: |
+        sum(rate(http_requests_total{status=~"5.."}[5m]))
+        /
+        sum(rate(http_requests_total[5m]))
+        > 0.05
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: High HTTP error rate
+        description: Error rate is above 5% for the last 5 minutes
+
+    - alert: HighLatency
+      expr: |
+        histogram_quantile(0.95,
+          sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+        ) > 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: High latency detected
+        description: 95th percentile latency is above 1s
+
+    - alert: HighMemoryUsage
+      expr: |
+        container_memory_usage_bytes{container="secureai-platform"}
+        /
+        container_spec_memory_limit_bytes{container="secureai-platform"}
+        > 0.85
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: High memory usage
+        description: Container memory usage above 85% for 15 minutes

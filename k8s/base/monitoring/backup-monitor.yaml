@@ -1,0 +1,56 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backup-monitoring
+  namespace: secureai
+spec:
+  selector:
+    matchLabels:
+      app: backup-system
+  endpoints:
+  - port: metrics
+    interval: 30s
+  namespaceSelector:
+    matchNames:
+    - velero
+    - secureai
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: backup-alerts
+  namespace: secureai
+spec:
+  groups:
+  - name: backup.rules
+    rules:
+    - alert: BackupFailure
+      expr: |
+        velero_backup_failure_total > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Backup failure detected
+        description: Backup operation has failed
+
+    - alert: BackupTooOld
+      expr: |
+        time() - max(velero_backup_last_successful_timestamp) > 86400
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Backup is too old
+        description: No successful backup in the last 24 hours
+
+    - alert: RestoreFailure
+      expr: |
+        velero_restore_failure_total > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Restore operation failed
+        description: Restore operation has failed

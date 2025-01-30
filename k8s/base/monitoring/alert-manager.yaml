@@ -1,0 +1,68 @@
+apiVersion: monitoring.coreos.com/v1
+kind: AlertmanagerConfig
+metadata:
+  name: secureai-alerts
+  namespace: secureai
+spec:
+  route:
+    groupBy: ['alertname', 'severity']
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 4h
+    receiver: 'default'
+    routes:
+    - receiver: 'pagerduty-critical'
+      matchers:
+      - name: severity
+        value: critical
+    - receiver: 'slack-warnings'
+      matchers:
+      - name: severity
+        value: warning
+    - receiver: 'email-notifications'
+      matchers:
+      - name: severity
+        value: info
+
+  receivers:
+  - name: 'default'
+    slackConfigs:
+    - channel: '#secureai-alerts'
+      apiURL:
+        key: slack-webhook-url
+        name: alert-manager-secrets
+      title: '{{ template "slack.title" . }}'
+      text: '{{ template "slack.text" . }}'
+
+  - name: 'pagerduty-critical'
+    pagerdutyConfigs:
+    - serviceKey:
+        key: pagerduty-key
+        name: alert-manager-secrets
+      description: '{{ template "pagerduty.description" . }}'
+      severity: '{{ .GroupLabels.severity }}'
+      class: '{{ .GroupLabels.alertname }}'
+
+  - name: 'slack-warnings'
+    slackConfigs:
+    - channel: '#secureai-warnings'
+      apiURL:
+        key: slack-webhook-url
+        name: alert-manager-secrets
+      title: '{{ template "slack.warning.title" . }}'
+      text: '{{ template "slack.warning.text" . }}'
+
+  - name: 'email-notifications'
+    emailConfigs:
+    - to: 'team@secureai.example.com'
+      from: 'alerts@secureai.example.com'
+      smarthost: 'smtp.office365.com:587'
+      authUsername:
+        key: smtp-username
+        name: alert-manager-secrets
+      authPassword:
+        key: smtp-password
+        name: alert-manager-secrets
+
+  templates:
+  - '/etc/alertmanager/templates/*.tmpl'

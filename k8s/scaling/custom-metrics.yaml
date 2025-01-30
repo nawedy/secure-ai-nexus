@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-metrics-config
+data:
+  config.yaml: |
+    rules:
+    - seriesQuery: 'model_request_latency_seconds_sum{namespace="secureai-prod"}'
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: "^(.*)_seconds_sum"
+        as: "${1}_seconds"
+      metricsQuery: 'rate(<<.Series>>{<<.LabelMatchers>>}[5m])'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: custom-metrics-adapter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: custom-metrics-adapter
+  template:
+    spec:
+      containers:
+      - name: adapter
+        image: k8s.gcr.io/prometheus-adapter/prometheus-adapter:v0.9.1
+        args:
+        - --config=/etc/adapter/config.yaml
+        - --metrics-relist-interval=30s
+        - --v=4
+        ports:
+        - containerPort: 6443
+        volumeMounts:
+        - name: config
+          mountPath: /etc/adapter
+      volumes:
+      - name: config
+        configMap:
+          name: custom-metrics-config 

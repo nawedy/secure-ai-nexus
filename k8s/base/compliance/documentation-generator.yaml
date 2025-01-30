@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: compliance-docs-generator
+  namespace: secureai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: compliance-docs-generator
+  template:
+    metadata:
+      labels:
+        app: compliance-docs-generator
+    spec:
+      containers:
+      - name: generator
+        image: secureairegistry.azurecr.io/compliance-docs-generator:latest
+        env:
+        - name: OUTPUT_FORMAT
+          value: "pdf,html,markdown"
+        - name: EVIDENCE_COLLECTION_INTERVAL
+          value: "24h"
+        - name: AZURE_TENANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: azure-credentials
+              key: tenant-id
+        volumeMounts:
+        - name: compliance-config
+          mountPath: /etc/compliance
+          readOnly: true
+        - name: documentation
+          mountPath: /var/compliance/docs
+        - name: evidence
+          mountPath: /var/compliance/evidence
+      volumes:
+      - name: compliance-config
+        configMap:
+          name: compliance-documentation
+      - name: documentation
+        persistentVolumeClaim:
+          claimName: compliance-docs
+      - name: evidence
+        persistentVolumeClaim:
+          claimName: compliance-evidence

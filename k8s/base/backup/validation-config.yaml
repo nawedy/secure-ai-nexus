@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-validation-config
+  namespace: secureai
+data:
+  validation-tests.yaml: |
+    tests:
+      - name: "metadata-validation"
+        description: "Validate backup metadata integrity"
+        checks:
+          - type: "checksum"
+            target: "metadata"
+          - type: "structure"
+            schema: "/etc/backup-validation/schemas/metadata.json"
+          - type: "completeness"
+            required_fields: ["timestamp", "size", "content_hash"]
+
+      - name: "data-integrity"
+        description: "Validate backup data integrity"
+        checks:
+          - type: "content-verification"
+            sample_size: 0.1  # 10% random sampling
+          - type: "encryption-verification"
+            keys: ["data-encryption-key"]
+          - type: "compression-check"
+            expected_ratio: 0.3
+
+      - name: "restore-simulation"
+        description: "Test restore in isolated environment"
+        steps:
+          - action: "create-namespace"
+            name: "backup-validation-{{.ID}}"
+          - action: "restore-backup"
+            target_namespace: "backup-validation-{{.ID}}"
+          - action: "verify-resources"
+            resource_types: ["deployments", "services", "configmaps", "secrets"]
+          - action: "verify-data"
+            consistency_check: true
+          - action: "cleanup"
+            delete_namespace: true
+
+      - name: "performance-validation"
+        description: "Validate backup and restore performance"
+        checks:
+          - type: "restore-time"
+            threshold: "15m"
+          - type: "resource-usage"
+            cpu_limit: "2"
+            memory_limit: "4Gi"
+          - type: "storage-efficiency"
+            compression_ratio: "> 0.5"

@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-documentation
+  namespace: secureai
+data:
+  getting-started.md: |
+    # SecureAI Platform - Getting Started Guide
+
+    ## Overview
+    SecureAI Platform provides secure model deployment and management with enterprise-grade security features.
+
+    ## Quick Start
+    1. Authentication
+       - Use Azure AD credentials
+       - Enable MFA when prompted
+       - Follow security best practices
+
+    2. Model Management
+       - Upload models through secure API
+       - Verify model integrity
+       - Monitor deployment status
+
+    3. Security Features
+       - Data encryption at rest and in transit
+       - Access control through RBAC
+       - Audit logging for all actions
+
+  security-guide.md: |
+    # Security Guidelines
+
+    ## Authentication
+    - Always use MFA
+    - Regular password rotation
+    - Session timeout after 15 minutes
+    - IP-based access restrictions
+
+    ## Data Protection
+    - All data encrypted using AES-256
+    - Secure key management through Azure Key Vault
+    - Regular key rotation
+    - Data classification guidelines
+
+    ## Compliance
+    - GDPR compliance requirements
+    - HIPAA guidelines
+    - Audit trail requirements
+    - Data retention policies
+
+  api-documentation.md: |
+    # API Documentation
+
+    ## Authentication
+    ```bash
+    # Get access token
+    curl -X POST https://api.secureai.example.com/auth/token \
+      -H "Content-Type: application/json" \
+      -d '{"client_id": "YOUR_CLIENT_ID"}'
+    ```
+
+    ## Model Management
+    ```bash
+    # Upload model
+    curl -X POST https://api.secureai.example.com/models \
+      -H "Authorization: Bearer TOKEN" \
+      -F "model=@model.pt"
+    ```
+
+    ## Security Endpoints
+    - /auth/* - Authentication endpoints
+    - /models/* - Model management
+    - /audit/* - Audit log access

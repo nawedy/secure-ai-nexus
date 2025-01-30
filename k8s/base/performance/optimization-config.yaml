@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: performance-config
+  namespace: secureai
+data:
+  optimization.yaml: |
+    caching:
+      redis:
+        maxmemory: "2gb"
+        maxmemory-policy: "allkeys-lru"
+        key-patterns:
+          - pattern: "model:*"
+            ttl: 3600
+          - pattern: "inference:*"
+            ttl: 300
+          - pattern: "auth:*"
+            ttl: 900
+
+    scaling:
+      autoscaling:
+        cpu-target: 70
+        memory-target: 80
+        min-replicas: 2
+        max-replicas: 10
+        scale-down-delay: 300s
+
+    network:
+      connection-pooling: true
+      keep-alive: true
+      timeout:
+        connect: 5s
+        read: 30s
+        write: 30s
+
+    model-optimization:
+      batch-processing:
+        max-batch-size: 32
+        max-latency: 100ms
+      caching:
+        model-weights: true
+        inference-results: true

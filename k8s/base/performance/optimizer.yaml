@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: performance-optimizer
+  namespace: secureai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: performance-optimizer
+  template:
+    metadata:
+      labels:
+        app: performance-optimizer
+    spec:
+      containers:
+      - name: optimizer
+        image: secureairegistry.azurecr.io/performance-optimizer:latest
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+        env:
+        - name: OPTIMIZATION_CONFIG
+          value: /etc/performance/optimization.yaml
+        - name: METRICS_ENDPOINT
+          value: http://prometheus:9090
+        volumeMounts:
+        - name: config
+          mountPath: /etc/performance
+          readOnly: true
+        - name: cache
+          mountPath: /var/cache/optimizer
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 60
+      volumes:
+      - name: config
+        configMap:
+          name: performance-config
+      - name: cache
+        emptyDir: {}

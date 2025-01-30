@@ -46,6 +46,18 @@ resources:
 - compliance/documentation-generator.yaml
 - compliance/evidence-collector.yaml
 - compliance/compliance-monitor.yaml
+- performance/optimization-config.yaml
+- performance/optimizer.yaml
+- performance/redis.yaml
+- performance/performance-monitor.yaml
+- verification/deployment-tests.yaml
+- verification/test-executor.yaml
+- verification/verification-monitor.yaml
+- verification/verification-dashboard.yaml
+- documentation/user-docs-config.yaml
+- documentation/docs-service.yaml
+- documentation/docs-ingress.yaml
+- documentation/docs-monitor.yaml
 
 commonLabels:
   app: secureai-platform

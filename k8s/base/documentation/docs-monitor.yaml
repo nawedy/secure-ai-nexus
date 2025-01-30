@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: docs-monitor
+  namespace: secureai
+spec:
+  selector:
+    matchLabels:
+      app: documentation-service
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: docs-alerts
+  namespace: secureai
+spec:
+  groups:
+  - name: documentation.rules
+    rules:
+    - alert: DocsServiceDown
+      expr: |
+        up{app="documentation-service"} == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Documentation service is down
+        description: The documentation service has been down for 5 minutes

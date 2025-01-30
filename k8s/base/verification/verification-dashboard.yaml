@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: verification-dashboard
+  namespace: secureai
+  labels:
+    grafana_dashboard: "true"
+data:
+  verification-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "Deployment Verification Status",
+        "refresh": "1m",
+        "panels": [
+          {
+            "title": "Test Success Rate",
+            "type": "gauge",
+            "gridPos": {"x": 0, "y": 0, "w": 6, "h": 6},
+            "targets": [
+              {
+                "expr": "sum(verification_test_success) / count(verification_test_success) * 100"
+              }
+            ]
+          },
+          {
+            "title": "Critical Tests Status",
+            "type": "table",
+            "gridPos": {"x": 6, "y": 0, "w": 18, "h": 6},
+            "targets": [
+              {
+                "expr": "verification_test_status{priority='critical'}"
+              }
+            ]
+          }
+        ]
+      }
+    }

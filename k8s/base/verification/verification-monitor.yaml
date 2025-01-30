@@ -1,0 +1,43 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: verification-monitor
+  namespace: secureai
+spec:
+  selector:
+    matchLabels:
+      app: deployment-verification
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: verification-alerts
+  namespace: secureai
+spec:
+  groups:
+  - name: verification.rules
+    rules:
+    - alert: VerificationTestFailure
+      expr: |
+        verification_test_success{priority="critical"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Critical verification test failure
+        description: One or more critical verification tests have failed
+
+    - alert: HighVerificationFailureRate
+      expr: |
+        sum(rate(verification_test_failures_total[1h])) / sum(rate(verification_test_total[1h])) > 0.1
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: High verification failure rate
+        description: Verification tests are failing at a rate higher than 10%

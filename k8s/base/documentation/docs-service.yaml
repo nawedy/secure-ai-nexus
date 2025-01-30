@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: documentation-service
+  namespace: secureai
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: documentation-service
+  template:
+    metadata:
+      labels:
+        app: documentation-service
+    spec:
+      containers:
+      - name: docs
+        image: secureairegistry.azurecr.io/documentation-service:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DOCS_PATH
+          value: /etc/documentation
+        volumeMounts:
+        - name: docs-content
+          mountPath: /etc/documentation
+          readOnly: true
+      volumes:
+      - name: docs-content
+        configMap:
+          name: user-documentation
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: documentation-service
+  namespace: secureai
+spec:
+  selector:
+    app: documentation-service
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP

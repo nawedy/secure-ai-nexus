@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: deployment-verification
+  namespace: secureai
+data:
+  verification-tests.yaml: |
+    tests:
+      - name: "security-verification"
+        priority: critical
+        steps:
+          - name: "authentication-test"
+            actions:
+              - type: "verify-auth"
+                checks:
+                  - "mfa-enabled"
+                  - "oauth-flow"
+                  - "token-validation"
+              - type: "verify-rbac"
+                roles: ["admin", "user", "readonly"]
+
+          - name: "encryption-test"
+            actions:
+              - type: "verify-encryption"
+                targets:
+                  - "data-at-rest"
+                  - "data-in-transit"
+              - type: "verify-key-rotation"
+                key-types: ["encryption", "signing"]
+
+      - name: "performance-verification"
+        priority: high
+        steps:
+          - name: "load-test"
+            actions:
+              - type: "latency-check"
+                threshold: "200ms"
+                percentile: 95
+              - type: "throughput-test"
+                target: "1000rps"
+                duration: "5m"
+
+          - name: "resource-usage"
+            actions:
+              - type: "monitor-resources"
+                metrics: ["cpu", "memory", "network"]
+                duration: "10m"
+                thresholds:
+                  cpu: "80%"
+                  memory: "75%"
+                  network: "1Gbps"
+
+      - name: "compliance-verification"
+        priority: critical
+        steps:
+          - name: "audit-check"
+            actions:
+              - type: "verify-logging"
+                required-fields:
+                  - "timestamp"
+                  - "user"
+                  - "action"
+                  - "resource"
+              - type: "verify-retention"
+                policy: "90-days"
+
+          - name: "data-protection"
+            actions:
+              - type: "verify-pii-handling"
+                checks:
+                  - "encryption"
+                  - "masking"
+                  - "access-control"

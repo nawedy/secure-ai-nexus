@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cache
+  namespace: secureai
+spec:
+  serviceName: redis-cache
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis-cache
+  template:
+    metadata:
+      labels:
+        app: redis-cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:6.2-alpine
+        command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+        ports:
+        - containerPort: 6379
+          name: redis
+        resources:
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+          requests:
+            cpu: "500m"
+            memory: "2Gi"
+        volumeMounts:
+        - name: redis-config
+          mountPath: /usr/local/etc/redis
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-config
+        configMap:
+          name: redis-config
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cache
+  namespace: secureai
+spec:
+  selector:
+    app: redis-cache
+  ports:
+  - port: 6379
+    targetPort: 6379
+  clusterIP: None

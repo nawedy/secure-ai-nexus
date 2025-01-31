@@ -613,7 +613,6 @@ docker system prune -a
    gcloud secrets versions add service-account-key \
      --data-file=new-key.json
    ```
-[Previous sections remain the same...]
 
 ## API-Specific Troubleshooting
 
@@ -778,4 +777,46 @@ docker system prune -a
      --duration=1m
    ```
 
+# Clean up Docker
+docker system prune -a --volumes
+docker logout gcr.io
 
+# Remove existing Docker config
+rm -rf ~/.docker/config.json
+
+# Revoke all GCP credentials
+gcloud auth revoke --all
+gcloud config unset project
+
+# Login with your account
+gcloud auth login
+
+# Set the project
+gcloud config set project secureai-nexus
+
+# Configure Docker with the correct credentials
+gcloud auth configure-docker gcr.io --quiet
+
+# Get authentication token
+gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://gcr.io
+
+# Verify the setup:
+```bash
+# Check GCP configuration
+gcloud config list
+
+# Verify Docker config
+cat ~/.docker/config.json
+
+# Check GCR permissions
+gcloud container images list --repository=gcr.io/secureai-nexus
+```
+
+# Add necessary IAM roles
+gcloud projects add-iam-policy-binding secureai-nexus \
+  --member="user:support@eriethio.com" \
+  --role="roles/storage.admin"
+
+gcloud projects add-iam-policy-binding secureai-nexus \
+  --member="user:support@eriethio.com" \
+  --role="roles/containerregistry.ServiceAgent"

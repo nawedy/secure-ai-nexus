@@ -1,0 +1,10 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/secureai-nexus/secureai-platform:latest', '.']
+
+  # Push the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/secureai-nexus/secureai-platform:latest']
+images:
+  - 'gcr.io/secureai-nexus/secureai-platform:latest'

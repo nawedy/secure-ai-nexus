@@ -14,7 +14,7 @@ A beginner-friendly guide to setting up the SecureAI Platform
 
 2. Clone the repository:
    ```bash
-   git clone https://github.com/your-org/secureai-platform
+   git clone (https://github.com/nawedy/secure-ai-nexus)
    cd secureai-platform
    ```
 
@@ -41,7 +41,7 @@ A beginner-friendly guide to setting up the SecureAI Platform
 ### Setting Up Authentication
 1. Create Azure AD Application:
    ```bash
-   az ad app create --display-name "SecureAI Platform"
+   az ad app create --display-name "SecureAI Nexus Platform"
    ```
 
 2. Enable MFA in Azure AD:
@@ -52,8 +52,8 @@ A beginner-friendly guide to setting up the SecureAI Platform
 
 3. Create API Keys:
    ```bash
-   # Generate a secure API key
-   python scripts/generate_api_key.py
+    # Generate a secure API key
+    python scripts/generate_api_key.py
    ```
 
 ### Setting Up Encryption

@@ -1,5 +1,5 @@
 # Use multi-stage build for security
-FROM python:3.9-slim as builder
+FROM python:3.9-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -18,15 +18,14 @@ FROM python:3.9-slim
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
-    libgomp1 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Copy only necessary files from builder
-COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
-COPY src/ src/
-COPY scripts/ scripts/
+COPY --from=builder /usr/local/lib/python3.9/site-packages/ /usr/local/lib/python3.9/site-packages/
+COPY . .
 
 # Create non-root user
 RUN useradd -m -u 1000 secureai
@@ -35,15 +34,10 @@ USER secureai
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV AZURE_MONITOR_CONNECTION_STRING=""
-ENV LOG_LEVEL=INFO
+ENV PORT=8080
 
-# Create logs directory with proper permissions
-RUN mkdir -p /app/logs && chown -R secureai:secureai /app/logs
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# Expose port
+EXPOSE 8080
 
 # Run the application
-CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]

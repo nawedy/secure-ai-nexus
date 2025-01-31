@@ -133,3 +133,86 @@ site/
 *.tmp
 *.temp
 .cache
+
+# Project specific
+secureai-nexus-*.json
+*-key.json
+.gcp-credentials/
+.azure-credentials/
+
+# Model files and artifacts
+models/
+*.onnx
+*.pt
+*.pth
+*.h5
+*.pkl
+*.bin
+*.safetensors
+
+# API and service configurations
+api-config.yaml
+service-config.yaml
+*-config.yaml
+!example-config.yaml
+
+# Security and certificates
+certs/
+*.crt
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Development and debugging
+.debug/
+debug.log
+*.profile
+profiling/
+benchmark-results/
+
+# CI/CD
+.github/.secrets
+.gitlab-ci-local/
+deployment-*.yaml
+!deployment-template.yaml
+
+# Dependencies
+requirements.txt.lock
+poetry.lock
+Pipfile.lock
+
+# Generated documentation
+docs/api/generated/
+docs/build/
+docs/site/
+*.pdf
+*.docx
+!requirements.pdf
+
+# Monitoring and observability
+.prometheus/
+.grafana/
+metrics/
+traces/
+alerts-history/
+
+# Local development overrides
+docker-compose.*.yml
+!docker-compose.yml
+!docker-compose.override.template.yml
+.env.*.local
+
+# Test data and fixtures
+tests/data/
+tests/fixtures/
+tests/coverage/
+.coverage.*
+
+# Backup and recovery
+backups/
+recovery/
+snapshots/
+*.backup
+*.snapshot

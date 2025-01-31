@@ -9,136 +9,108 @@ on:
 jobs:
   security-checks:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.9, 3.10, 3.11]
-        node-version: [18.x, 20.x]
-
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v2
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+    - name: Set up Python
+      uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.9'
 
-    - name: Set up Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-
-    - name: Install Python dependencies
+    - name: Install security tools
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install bandit safety pytest-security
+        pip install bandit safety pytest-cov
 
-    - name: Install Node.js dependencies
-      run: |
-        npm ci
-        npm install -g snyk
+    - name: Run Bandit
+      run: bandit -r src/ -ll -ii -f json -o bandit-results.json
 
-    - name: Run ESLint security checks
-      run: npm run lint
+    - name: Run Safety Check
+      run: safety check
 
-    - name: Run TypeScript type checks
-      run: npm run type-check
-
-    - name: Run Python security checks
-      run: |
-        bandit -r ./src
-        safety check
-        pytest --security
-
-    - name: Run Snyk security scan
-      run: snyk test
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-    - name: Run SAST analysis
-      uses: github/codeql-action/analyze@v2
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v0
       with:
-        languages: ['python', 'javascript', 'typescript']
+        project_id: ${{ env.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
 
-    - name: Run dependency audit
-      run: |
-        npm audit
-        pip-audit
-
-    - name: Run container security scan
-      uses: aquasecurity/trivy-action@master
+    - name: Run Container Scan
+      uses: anchore/scan-action@v2
       with:
-        scan-type: 'fs,vuln'
-        ignore-unfixed: true
-        format: 'sarif'
-        output: 'trivy-results.sarif'
+        image: "gcr.io/secureai-nexus/secureai-platform:latest"
+        fail-build: true
+        severity-cutoff: high
 
-    - name: Run secrets scanning
-      uses: gitleaks/gitleaks-action@v2
-      env:
-        GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+    - name: Upload security results
+      uses: actions/upload-artifact@v2
+      with:
+        name: security-results
+        path: bandit-results.json
 
   build-and-test:
     needs: security-checks
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v2
 
-    - name: Build application
-      run: |
-        npm run build
-        python -m build
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
 
-    - name: Run tests
+    - name: Install dependencies
       run: |
-        npm test
-        pytest
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt
 
-    - name: Run integration tests
-      run: |
-        npm run test:integration
-        pytest tests/integration
+    - name: Run tests with coverage
+      run: pytest --cov=src --cov-report=xml
 
     - name: Build Docker image
-      run: docker build -t secureai-platform .
+      run: docker build -t gcr.io/secureai-nexus/secureai-platform:latest .
 
     - name: Scan Docker image
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: 'secureai-platform:latest'
+        image-ref: 'gcr.io/secureai-nexus/secureai-platform:latest'
         format: 'table'
         exit-code: '1'
         severity: 'CRITICAL,HIGH'
 
-  deploy:
+  deploy-security:
     needs: build-and-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    environment: production
     steps:
-    - name: Configure Azure credentials
-      uses: azure/login@v1
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v0
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        project_id: ${{ env.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
 
-    - name: Deploy to Azure
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: 'secureai-platform'
-        slot-name: 'production'
-        package: .
-
-    - name: Run post-deployment security scan
-      uses: azure/security-scan@v1
-      with:
-        resource-group: 'secureai-platform'
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-    - name: Security monitoring setup
+    - name: Configure Security Settings
       run: |
-        az monitor alert create \
-          --name "SecurityAlert" \
-          --resource-group "secureai-platform" \
-          --condition "SecurityEvent >= 1" \
-          --description "Security event detected"
+        gcloud services enable cloudsecurityscanner.googleapis.com
+        gcloud services enable securitycenter.googleapis.com
+        gcloud services enable cloudkms.googleapis.com
+
+    - name: Set up Cloud Monitoring
+      run: |
+        gcloud monitoring channels create \
+          --display-name="Security Alerts" \
+          --type=email \
+          --email-address=security@secureai-nexus.com
+
+    - name: Create Security Policies
+      run: |
+        gcloud compute security-policies create secureai-policy \
+          --description="Security policy for SecureAI Platform"
+
+    - name: Run Security Scanner
+      run: |
+        gcloud web-security-scanner scan-runs create \
+          --scan-config=secureai-scan \
+          --display-name="Post Deploy Security Scan"

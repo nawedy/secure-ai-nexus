@@ -39,5 +39,14 @@ ENV PORT=8080
 # Expose port
 EXPOSE 8080
 
+# Add GCP specific labels
+LABEL org.opencontainers.image.source=https://github.com/nawedy/secure-ai-nexus
+LABEL org.opencontainers.image.description="SecureAI Platform GCP Deployment"
+LABEL org.opencontainers.image.licenses=MIT
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
 # Run the application
 CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]

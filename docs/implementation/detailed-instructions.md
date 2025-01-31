@@ -328,3 +328,28 @@
 - [ ] Logging is functional
 - [ ] SSL/TLS is working
 - [ ] WAF rules are active
+
+## GCP Project Setup
+
+### Service Account Configuration
+1. Create service account
+2. Assign necessary roles:
+   - Container Registry Service Agent
+   - Cloud Run Admin
+   - Secret Manager Admin
+   - Monitoring Admin
+
+### Security Configuration
+1. Enable Cloud KMS
+2. Set up secrets in Secret Manager
+3. Configure IAM policies
+4. Set up VPC Service Controls
+
+### Monitoring Setup
+1. Enable Cloud Monitoring
+2. Configure alerting policies
+3. Set up logging exports
+4. Configure uptime checks
+
+## Local Development
+...

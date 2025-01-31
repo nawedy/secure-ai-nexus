@@ -1,187 +1,286 @@
-# SecureAI Platform Implementation Guide
-A beginner-friendly guide to setting up the SecureAI Platform
+# SecureAI Platform GCP Implementation Guide
 
-## Step 1: Basic Setup
+## Prerequisites
+1. GCP Account with billing enabled
+2. Local development tools installed (Python 3.9+, Docker)
+3. Google Cloud SDK installed
+4. Service account with necessary permissions
 
-### Setting Up Your Development Environment
-1. Install required tools:
+## Step-by-Step Setup
+
+### 1. Initial Configuration
+```bash
+# Install Google Cloud SDK
+brew install google-cloud-sdk  # For macOS
+
+# Login to GCP
+gcloud auth login
+
+# Set project
+gcloud config set project secureai-nexus
+
+# Create service account
+gcloud iam service-accounts create secureai-nexus \
+  --display-name="SecureAI Platform Service Account"
+```
+
+### 2. Development Environment Setup
+1. Clone the repository:
    ```bash
-   # Install Python 3.9 or higher
-   # Install Docker
-   # Install Azure CLI
-   # Install kubectl
+   git clone https://github.com/nawedy/secure-ai-nexus
+   cd secure-ai-nexus
    ```
 
-2. Clone the repository:
-   ```bash
-   git clone (https://github.com/nawedy/secure-ai-nexus)
-   cd secureai-platform
-   ```
-
-3. Create a virtual environment:
+2. Create virtual environment:
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
    ```
 
-### Azure Account Setup
-1. Create an Azure account if you don't have one
-2. Install Azure CLI and log in:
+3. Configure environment:
    ```bash
-   az login
-   ```
-3. Create a resource group:
-   ```bash
-   az group create --name secureai-rg --location eastus
+   # Copy template and edit with your values
+   cp .env.template .env
    ```
 
-## Step 2: Security Setup
+### 3. Enable Required GCP Services
+```bash
+# Enable necessary APIs
+gcloud services enable \
+  containerregistry.googleapis.com \
+  cloudbuild.googleapis.com \
+  cloudkms.googleapis.com \
+  monitoring.googleapis.com \
+  logging.googleapis.com \
+  secretmanager.googleapis.com
+```
 
-### Setting Up Authentication
-1. Create Azure AD Application:
+### 4. Security Setup
+1. Set up Secret Manager:
    ```bash
-   az ad app create --display-name "SecureAI Nexus Platform"
+   # Create secrets
+   echo -n "your-api-key" | \
+     gcloud secrets create api-key \
+     --data-file=- \
+     --replication-policy="automatic"
    ```
 
-2. Enable MFA in Azure AD:
-   - Go to Azure Portal
-   - Navigate to Azure AD
-   - Select Security
-   - Enable MFA for users
-
-3. Create API Keys:
+2. Configure IAM permissions:
    ```bash
-    # Generate a secure API key
-    python scripts/generate_api_key.py
+   # Grant service account access to secrets
+   gcloud secrets add-iam-policy-binding api-key \
+     --member="serviceAccount:secureai-nexus@secureai-nexus.iam.gserviceaccount.com" \
+     --role="roles/secretmanager.secretAccessor"
    ```
 
-### Setting Up Encryption
-1. Create Azure Key Vault:
+### 5. Build and Deploy
+1. Build Docker image:
    ```bash
-   az keyvault create \
-     --name secureai-kv \
-     --resource-group secureai-rg
+   # Build the image
+   docker build -t gcr.io/secureai-nexus/secureai-platform:latest .
+
+   # Configure Docker auth
+   gcloud auth configure-docker
+
+   # Push to Container Registry
+   docker push gcr.io/secureai-nexus/secureai-platform:latest
    ```
 
-2. Store initial secrets:
+2. Deploy to Cloud Run:
    ```bash
-   # Store API key in Key Vault
-   az keyvault secret set \
-     --vault-name secureai-kv \
-     --name "api-key" \
-     --value "your-api-key"
+   gcloud run deploy secureai-platform \
+     --image gcr.io/secureai-nexus/secureai-platform:latest \
+     --platform managed \
+     --region us-central1 \
+     --allow-unauthenticated \
+     --set-env-vars "ENVIRONMENT=production"
    ```
 
-## Step 3: Infrastructure Setup
-
-### Setting Up Kubernetes
-1. Create AKS cluster:
+### 5. DNS and Domain Configuration
+1. Set up Cloud DNS:
    ```bash
-   az aks create \
-     --resource-group secureai-rg \
-     --name secureai-aks \
-     --node-count 3
+   # Create DNS zone if not exists
+   gcloud dns managed-zones create eriethio \
+     --dns-name="eriethio.com." \
+     --description="Main domain zone"
+
+   # Add subdomain record for secureai
+   gcloud dns record-sets create secureai.eriethio.com. \
+     --type=A \
+     --zone=eriethio \
+     --rrdatas=$(gcloud run services describe secureai-platform \
+       --platform managed \
+       --region us-central1 \
+       --format='get(status.url)' | sed 's/https:\/\///')
    ```
 
-2. Get credentials:
+2. Configure SSL Certificate:
    ```bash
-   az aks get-credentials \
-     --resource-group secureai-rg \
-     --name secureai-aks
+   # Create certificate
+   gcloud certificate-manager certificates create secureai-cert \
+     --domains="secureai.eriethio.com"
+
+   # Map certificate to Cloud Run service
+   gcloud run services update secureai-platform \
+     --region us-central1 \
+     --certificate=secureai-cert
    ```
 
-### Setting Up Monitoring
-1. Enable Azure Monitor:
+3. Update DNS Provider:
+   - Log in to your DNS provider (where eriethio.com is registered)
+   - Add these records:
+     ```
+     Type  | Name    | Value
+     CNAME | secureai| ghs.googlehosted.com.
+     TXT   | secureai| google-site-verification=<verification-code>
+     ```
+
+4. Verify DNS Configuration:
    ```bash
-   az monitor log-analytics workspace create \
-     --resource-group secureai-rg \
-     --workspace-name secureai-logs
+   # Check DNS propagation
+   dig secureai.eriethio.com
+
+   # Verify SSL certificate
+   curl -v https://secureai.eriethio.com/health
    ```
 
-2. Set up Prometheus and Grafana:
+### 6. Security Hardening
+1. Configure Cloud Armor:
    ```bash
-   # Deploy monitoring stack
-   kubectl apply -f k8s/base/monitoring/
+   # Create security policy
+   gcloud compute security-policies create secureai-policy \
+     --description="Security policy for SecureAI Platform"
+
+   # Add WAF rules
+   gcloud compute security-policies rules create 1000 \
+     --security-policy=secureai-policy \
+     --expression="evaluatePreconfiguredWaf('crs-v2', {'sensitivity': 1})" \
+     --action=deny-403
+
+   # Apply to Cloud Run
+   gcloud run services update secureai-platform \
+     --region us-central1 \
+     --security-policy=secureai-policy
    ```
 
-## Step 4: Application Deployment
-
-### Deploying the Platform
-1. Build the Docker image:
+2. Set up VPC Service Controls:
    ```bash
-   docker build -t secureai-platform .
+   # Create service perimeter
+   gcloud access-context-manager perimeters create secureai-perimeter \
+     --title="SecureAI Perimeter" \
+     --resources="projects/$GCP_PROJECT_NUMBER" \
+     --restricted-services="run.googleapis.com,containerregistry.googleapis.com"
    ```
 
-2. Deploy the application:
+### 7. Monitoring and Alerting
+1. Create Alert Policies:
    ```bash
-   # Deploy base components
-   kubectl apply -f k8s/base/deployment.yaml
-   kubectl apply -f k8s/base/service.yaml
+   # Create latency alert
+   gcloud monitoring alert-policies create \
+     --display-name="High Latency Alert" \
+     --condition-filter="metric.type=\"run.googleapis.com/request_latencies\" resource.type=\"cloud_run_revision\"" \
+     --duration="5m" \
+     --threshold-value=1000 \
+     --comparison="COMPARISON_GT"
+
+   # Create error rate alert
+   gcloud monitoring alert-policies create \
+     --display-name="Error Rate Alert" \
+     --condition-filter="metric.type=\"run.googleapis.com/request_count\" resource.type=\"cloud_run_revision\" metric.labels.response_code_class=\"5xx\"" \
+     --duration="5m" \
+     --threshold-value=5 \
+     --comparison="COMPARISON_GT"
    ```
 
-### Verifying the Deployment
+2. Configure Log Exports:
+   ```bash
+   # Create log bucket
+   gcloud logging buckets create secureai-logs \
+     --location=global
+
+   # Set up log routing
+   gcloud logging sinks create secureai-sink \
+     logging.googleapis.com/projects/$GCP_PROJECT_ID/locations/global/buckets/secureai-logs \
+     --log-filter="resource.type=\"cloud_run_revision\""
+   ```
+
+### 8. Verify Deployment
 1. Check deployment status:
    ```bash
-   kubectl get pods -n secureai
+   # List Cloud Run services
+   gcloud run services list
+
+   # Get service URL
+   gcloud run services describe secureai-platform \
+     --platform managed \
+     --region us-central1 \
+     --format='value(status.url)'
    ```
 
 2. Test the API:
    ```bash
    # Test health endpoint
-   curl https://your-api-domain/health
-   ```
-
-## Step 5: Post-Deployment Tasks
-
-### Security Verification
-1. Run security tests:
-   ```bash
-   ./scripts/security-tests.sh
-   ```
-
-2. Verify MFA is working:
-   - Try logging in to the platform
-   - Confirm MFA prompt appears
-   - Test with different users
-
-### Setting Up Backups
-1. Configure backup storage:
-   ```bash
-   az storage account create \
-     --name secureaibackup \
-     --resource-group secureai-rg
-   ```
-
-2. Enable automated backups:
-   ```bash
-   kubectl apply -f k8s/base/backup/
+   curl $(gcloud run services describe secureai-platform \
+     --platform managed \
+     --region us-central1 \
+     --format='value(status.url)')/health
    ```
 
 ## Common Issues and Solutions
 
 ### Authentication Issues
-- **Problem**: MFA not working
-  - **Solution**: Check Azure AD MFA settings
-  - **Solution**: Verify user is in correct security group
+- Check service account permissions
+- Verify Docker authentication
+- Review Secret Manager access
 
 ### Deployment Issues
-- **Problem**: Pods not starting
-  - **Solution**: Check pod logs: `kubectl logs <pod-name>`
-  - **Solution**: Verify resource limits
-
-### Security Issues
-- **Problem**: Key Vault access denied
-  - **Solution**: Check service principal permissions
-  - **Solution**: Verify network access rules
+- Check Cloud Run logs
+- Verify container health
+- Review resource allocation
 
 ## Next Steps
-1. Set up additional security features
-2. Configure custom monitoring dashboards
-3. Set up automated testing
-4. Document your specific configuration
+1. Set up CI/CD pipeline
+2. Configure custom domain
+3. Implement backup strategy
+4. Set up additional security measures
 
 ## Getting Help
 - Check the troubleshooting guide
 - Review logs for specific errors
 - Contact support if needed
+
+## Production Checklist
+- [ ] Domain and SSL configured correctly
+- [ ] Security policies and WAF rules active
+- [ ] Monitoring and alerting set up
+- [ ] Backup strategy implemented
+- [ ] Rate limiting configured
+- [ ] Error handling tested
+- [ ] Load testing completed
+- [ ] Security scanning automated
+- [ ] Documentation updated
+- [ ] Emergency procedures documented
+
+## Maintenance Procedures
+1. Certificate Renewal:
+   ```bash
+   # Check certificate status
+   gcloud certificate-manager certificates describe secureai-cert
+   ```
+
+2. Security Updates:
+   ```bash
+   # Update base image
+   docker pull python:3.9-slim
+   docker build --no-cache -t gcr.io/secureai-nexus/secureai-platform:latest .
+   ```
+
+3. Monitoring Review:
+   ```bash
+   # Check recent alerts
+   gcloud monitoring alert-policies list
+
+   # Review logs
+   gcloud logging read "resource.type=cloud_run_revision" --limit=10
+   ```

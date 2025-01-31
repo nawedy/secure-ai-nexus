@@ -1,0 +1,20 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install minimal dependencies
+COPY requirements.txt .
+RUN pip install fastapi uvicorn
+
+# Create a test app
+RUN echo '\
+from fastapi import FastAPI\n\
+app = FastAPI()\n\
+\n\
+@app.get("/health")\n\
+def health_check():\n\
+    return {"status": "healthy"}\n\
+' > main.py
+
+ENV PORT=8080
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

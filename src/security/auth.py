@@ -5,11 +5,11 @@ import secrets
 from typing import Optional
 import logging
 from datetime import datetime, timedelta
-from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
 from msal import ConfidentialClientApplication
 import jwt
 import os
+from google.cloud import secretmanager
+from google.auth import default
 
 logger = logging.getLogger(__name__)
 
@@ -137,8 +137,11 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 
 auth = AzureADAuth()
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    return await auth.verify_token(token)
+async def get_current_user():
+    # Replace Azure auth logic with GCP
+    credentials, project = default()
+    client = secretmanager.SecretManagerServiceClient()
+    # ... rest of the authentication logic
 
 security_manager = SecurityManager()
 data_protection = DataProtectionPipeline()

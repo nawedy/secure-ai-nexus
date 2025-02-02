@@ -8,8 +8,12 @@ from datetime import datetime
 import yaml
 import kubernetes
 from kubernetes import client, config
+import os
 
 logger = logging.getLogger(__name__)
+
+# Set the project ID
+project_id = os.getenv('GCP_PROJECT_ID', 'secureai-nexus')
 
 class DeploymentOrchestrator:
     """Advanced deployment automation system"""

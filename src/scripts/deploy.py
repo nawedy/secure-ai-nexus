@@ -3,6 +3,13 @@ import asyncio
 from src.deployment.deployment_orchestrator import DeploymentOrchestrator
 from src.monitoring.system import system_monitor
 from src.notifications.deployment_notifier import notifier
+import os
+
+# Ensure the correct project is set
+os.environ['GOOGLE_CLOUD_PROJECT'] = 'secureai-nexus'
+
+# Use the project ID in deployment logic
+project_id = os.getenv('GCP_PROJECT_ID', 'secureai-nexus')
 
 async def main():
     try:

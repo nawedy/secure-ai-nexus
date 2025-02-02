@@ -1,0 +1,14 @@
+---
+description: follow the rules
+globs: 
+---
+
+# Your rule content
+
+- always adhere to .cursorrules and whatever is listed here is only additional, not a replacement
+- make sure to add comments throughout the code files
+-makes sure you follow the rules, and ask questions if you need to
+- Whenever you are done with each request and ask me "would you like me to: ..." and give a list of items, I would like you to include benefits of each suggestion, whether we havepreviously implemented related items, and the specific item, feature, component it will affect
+- generate concise summary of completed tasks each time you complete them
+
+

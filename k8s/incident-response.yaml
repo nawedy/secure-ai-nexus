@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: incident-response-config
+data:
+  response-rules.yaml: |
+    rules:
+      - name: high-severity-vuln
+        condition: "severity == 'CRITICAL'"
+        actions:
+          - notify_security_team
+          - scale_down_service
+          - create_incident_ticket
+      - name: unusual-traffic
+        condition: "requests_per_second > 1000"
+        actions:
+          - enable_rate_limiting
+          - notify_ops_team
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: incident-responder
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: incident-responder
+  template:
+    metadata:
+      labels:
+        app: incident-responder
+    spec:
+      containers:
+      - name: responder
+        image: gcr.io/secureai-nexus/incident-responder:latest
+        env:
+        - name: ALERT_EMAIL
+          value: "security@eriethio.com"
+        - name: SLACK_WEBHOOK
+          valueFrom:
+            secretKeyRef:
+              name: security-secrets
+              key: slack-webhook
+        volumeMounts:
+        - name: response-config
+          mountPath: /etc/incident-response
+      volumes:
+      - name: response-config
+        configMap:
+          name: incident-response-config

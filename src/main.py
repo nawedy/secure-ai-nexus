@@ -1,62 +1,79 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Request, Form, HTTPException, Depends
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2AuthorizationCodeBearer
-from .security.auth import get_current_user
-from .security.azure_setup import AzureSecuritySetup
-from .models.security import ModelSecurity
-import logging
-from .monitoring.middleware import MonitoringMiddleware
-from .monitoring.alerts import AlertManager
-from .monitoring.metrics import MetricsManager
-from .monitoring.logging import SecureLogger
+import os
+import smtplib
+from email.mime.text import MIMEText
+from .security import auth
+from .models import database
+from .api import router
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+app = FastAPI(
+    title="GetAISecured",
+    description="Enterprise-grade security for AI applications",
+    version="1.0.0"
+)
 
-app = FastAPI(title="SecureAI Platform")
-
-# Security setup
-azure_setup = AzureSecuritySetup()
-model_security = ModelSecurity(azure_setup.key_vault_client)
-
-# Monitoring setup
-metrics_manager = MetricsManager()
-secure_logger = SecureLogger()
-alert_manager = AlertManager()
-
-# CORS middleware
+# CORS for SvelteKit frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Update this for production
+    allow_origins=["http://localhost:5173"],  # SvelteKit dev server
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Add middleware
-app.add_middleware(MonitoringMiddleware)
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize security and monitoring components on startup"""
-    try:
-        await azure_setup.setup_key_vault()
+# Email configuration
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
-        # Set up monitoring
-        await alert_manager.setup_alerts()
+# Include routers
+app.include_router(router.api_router, prefix="/api")
 
-        logger.info("Security and monitoring initialization completed")
-    except Exception as e:
-        logger.error(f"Initialization failed: {str(e)}")
-        raise
+@app.get("/")
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/health")
 async def health_check():
-    """Basic health check endpoint"""
     return {"status": "healthy"}
 
-@app.get("/secure")
-async def secure_endpoint(current_user = Depends(get_current_user)):
-    """Test secured endpoint"""
-    return {"message": "Access granted", "user": current_user}
+@app.post("/api/contact")
+async def contact(
+    name: str = Form(...),
+    email: str = Form(...),
+    message: str = Form(...)
+):
+    try:
+        # Create email message
+        msg = MIMEText(f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}")
+        msg['Subject'] = f"Contact Form Submission from {name}"
+        msg['From'] = SMTP_USERNAME
+        msg['To'] = "contact@getaisecured.com"
+
+        # Send email
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(msg)
+
+        return JSONResponse(content={"status": "success"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/login")
+async def login(
+    email: str = Form(...),
+    password: str = Form(...),
+    remember_me: bool = Form(False)
+):
+    # Add authentication logic here
+    return RedirectResponse(url="/dashboard", status_code=303)

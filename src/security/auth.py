@@ -1,6 +1,6 @@
 from fastapi import Security, HTTPException, status, Depends
 from fastapi.security.api_key import APIKeyHeader
-from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.security import OAuth2AuthorizationCodeBearer, OAuth2PasswordBearer
 import secrets
 from typing import Optional
 import logging
@@ -10,6 +10,9 @@ import jwt
 import os
 from google.cloud import secretmanager
 from google.auth import default
+from jose import JWTError
+from passlib.context import CryptContext
+from ..models import schemas, database
 
 logger = logging.getLogger(__name__)
 
@@ -130,18 +133,67 @@ class AzureADAuth:
                 detail="Invalid authentication credentials"
             )
 
-oauth2_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl="https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
-    tokenUrl="https://login.microsoftonline.com/common/oauth2/v2.0/token"
-)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 auth = AzureADAuth()
 
-async def get_current_user():
-    # Replace Azure auth logic with GCP
-    credentials, project = default()
-    client = secretmanager.SecretManagerServiceClient()
-    # ... rest of the authentication logic
+# Security configurations
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Environment variables
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash"""
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password: str) -> str:
+    """Generate password hash"""
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create JWT token with expiration"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> schemas.User:
+    """Get current user from JWT token"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+        token_data = schemas.TokenData(email=email)
+    except JWTError:
+        raise credentials_exception
+
+    user = await get_user_by_email(token_data.email)
+    if user is None:
+        raise credentials_exception
+    return user
+
+async def get_current_active_user(
+    current_user: schemas.User = Depends(get_current_user)
+) -> schemas.User:
+    """Verify user is active"""
+    if not current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
 
 security_manager = SecurityManager()
 data_protection = DataProtectionPipeline()

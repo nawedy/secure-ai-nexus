@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: email-security-config
+data:
+  dmarc-aggregate.xml: |
+    <?xml version="1.0" encoding="UTF-8" ?>
+    <feedback>
+      <report_metadata>
+        <org_name>SecureAI Platform</org_name>
+        <email>security@eriethio.com</email>
+        <extra_contact_info>https://secureai.eriethio.com/security</extra_contact_info>
+        <report_id>2023</report_id>
+      </report_metadata>
+    </feedback>
+
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: email-security-monitor
+spec:
+  schedule: "0 */6 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: security-monitor
+            image: gcr.io/secureai-nexus/security-monitor:latest
+            env:
+            - name: DMARC_REPORT_EMAIL
+              value: "security@eriethio.com"
+            - name: SPF_CHECK_DOMAINS
+              value: "eriethio.com,secureai.eriethio.com"
+          restartPolicy: OnFailure

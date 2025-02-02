@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: security-scanner
+spec:
+  schedule: "0 */4 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: security-scanner
+            image: aquasec/trivy:latest
+            args:
+            - "--severity=HIGH,CRITICAL"
+            - "--ignore-unfixed"
+            - "--format=json"
+            - "--output=/scan-results/report.json"
+            - "gcr.io/secureai-nexus/secureai-platform:latest"
+            volumeMounts:
+            - name: scan-results
+              mountPath: /scan-results
+          volumes:
+          - name: scan-results
+            persistentVolumeClaim:
+              claimName: security-scan-results
+          restartPolicy: OnFailure

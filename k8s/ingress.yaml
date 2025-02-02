@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: secureai-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "secureai-ip"
+    networking.gke.io/managed-certificates: "secureai-cert"
+    # Enhanced Security Headers
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/hsts: "max-age=31536000; includeSubDomains; preload"
+    nginx.ingress.kubernetes.io/x-frame-options: "DENY"
+    nginx.ingress.kubernetes.io/x-content-type-options: "nosniff"
+    nginx.ingress.kubernetes.io/referrer-policy: "strict-origin-when-cross-origin"
+    nginx.ingress.kubernetes.io/content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; media-src 'self'; form-action 'self';"
+    nginx.ingress.kubernetes.io/permissions-policy: "camera=(), microphone=(), geolocation=(), payment=()"
+    nginx.ingress.kubernetes.io/cross-origin-opener-policy: "same-origin"
+    nginx.ingress.kubernetes.io/cross-origin-embedder-policy: "require-corp"
+    nginx.ingress.kubernetes.io/cross-origin-resource-policy: "same-origin"
+spec:
+  rules:
+  - host: secureai.eriethio.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: secureai-platform
+            port:
+              number: 80

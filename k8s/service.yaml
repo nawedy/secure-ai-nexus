@@ -2,11 +2,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: secureai-platform
-  namespace: default
+  namespace: production
 spec:
   type: LoadBalancer
   ports:
-  - port: 80
+  - port: 8080
     targetPort: 8080
+    protocol: TCP
   selector:
     app: secureai-platform

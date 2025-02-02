@@ -2,9 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: secureai-platform
-  namespace: default
+  namespace: production
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: secureai-platform
@@ -15,9 +15,17 @@ spec:
     spec:
       containers:
       - name: secureai-platform
-        image: gcr.io/secureai-nexus/secureai-platform:latest
+        image: gcr.io/YOUR_PROJECT_ID/secureai-platform:1.0.0
         ports:
         - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
         env:
         - name: PORT
           value: "8080"

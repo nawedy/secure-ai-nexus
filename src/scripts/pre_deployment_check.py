@@ -1,8 +1,8 @@
 import asyncio
 import logging
 from typing import Dict, List
-from src.monitoring.system import system_monitor
-from src.monitoring.metrics_detail import metrics_detail
+from monitoring.system import system_monitor
+from monitoring.metrics_detail import metrics_detail
 import json
 
 logger = logging.getLogger(__name__)

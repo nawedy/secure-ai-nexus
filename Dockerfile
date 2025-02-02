@@ -2,21 +2,23 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Install dependencies
+# Copy requirements and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create necessary directories
-RUN mkdir -p static/images templates
+# Copy application code
+COPY src/ src/
+COPY setup.py .
 
-# Copy application files
-COPY . .
+# Install the application
+RUN pip install -e .
 
 # Set environment variables
 ENV PORT=8080
-ENV HOST=0.0.0.0
-ENV PYTHONUNBUFFERED=1
-ENV DOMAIN=getaisecured.com
+ENV PYTHONPATH=/app
+
+# Expose port
+EXPOSE 8080
 
 # Run the application
-CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["python", "src/scripts/deploy.py"]

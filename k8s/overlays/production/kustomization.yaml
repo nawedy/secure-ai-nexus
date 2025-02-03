@@ -3,11 +3,11 @@ kind: Kustomization
 
 namespace: secureai-production
 
-resources:
+bases:
 - ../../base
 
-patches:
-- path: patches/deployment.yaml
+patchesStrategicMerge:
+- patches/deployment.yaml
 
 configMapGenerator:
 - name: secureai-config

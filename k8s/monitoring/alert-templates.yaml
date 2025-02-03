@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alert-templates
+  namespace: monitoring
+data:
+  slack.tmpl: |
+    {{ define "slack.title" }}
+    [{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}
+    {{ end }}
+
+    {{ define "slack.text" }}
+    *Alert:* {{ .GroupLabels.alertname }}
+    *Severity:* {{ .GroupLabels.severity }}
+    *Status:* {{ .Status }}
+
+    *Description:* {{ .CommonAnnotations.description }}
+
+    *Details:*
+    {{ range .Alerts }}
+      {{ range .Labels.SortedPairs }}
+      • *{{ .Name }}:* `{{ .Value }}`
+      {{ end }}
+    {{ end }}
+    {{ end }}

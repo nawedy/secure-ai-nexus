@@ -28,5 +28,11 @@ data:
             action: keep
             regex: true
 
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - "alertmanager:9093"
+
     rule_files:
       - /etc/prometheus/rules/*.rules

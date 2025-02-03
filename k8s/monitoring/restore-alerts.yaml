@@ -1,0 +1,60 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: restore-alerts
+  namespace: monitoring
+spec:
+  groups:
+  - name: restore.rules
+    rules:
+    - alert: RestoreFailure
+      expr: |
+        increase(restore_failure_total[1h]) > 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Database restore failed"
+        description: "Database restore operation has failed"
+
+    - alert: RestoreVerificationFailure
+      expr: |
+        increase(restore_verification_total{status="failure"}[1h]) > 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Restore verification failed"
+        description: "Database restore verification has failed"
+
+    - alert: LongRunningRestore
+      expr: |
+        restore_duration_seconds > 3600  # 1 hour
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Long-running restore operation"
+        description: "Restore operation is taking longer than expected"
+
+    - alert: MultipleRestoresInProgress
+      expr: |
+        restore_in_progress > 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Multiple restore operations"
+        description: "Multiple restore operations are running simultaneously"
+
+    - alert: HighRestoreFailureRate
+      expr: |
+        sum(increase(restore_failure_total[24h])) /
+        sum(increase(restore_success_total[24h]) + increase(restore_failure_total[24h]))
+        > 0.1
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High restore failure rate"
+        description: "More than 10% of restore operations are failing"

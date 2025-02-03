@@ -1,0 +1,63 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: backup-alerts
+  namespace: monitoring
+spec:
+  groups:
+  - name: backup.rules
+    rules:
+    - alert: BackupFailure
+      expr: |
+        increase(backup_failure_total[24h]) > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Database backup failed"
+        description: "Database backup has failed in the last 24 hours"
+
+    - alert: BackupVerificationFailure
+      expr: |
+        increase(backup_verification_total{status="failure"}[24h]) > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Backup verification failed"
+        description: "Backup verification has failed in the last 24 hours"
+
+    - alert: BackupTooOld
+      expr: |
+        backup_age_seconds > 86400  # 24 hours
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Backup is too old"
+        description: "Most recent backup is over 24 hours old"
+
+    - alert: BackupSizeAbnormal
+      expr: |
+        abs(
+          backup_size_bytes
+          /
+          avg_over_time(backup_size_bytes[7d])
+          - 1
+        ) > 0.5
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Abnormal backup size"
+        description: "Backup size has changed by more than 50% compared to 7-day average"
+
+    - alert: BackupDurationAbnormal
+      expr: |
+        backup_duration_seconds > histogram_quantile(0.95, rate(backup_duration_seconds_bucket[7d]))
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Backup duration abnormal"
+        description: "Backup is taking longer than usual to complete"

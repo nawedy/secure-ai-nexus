@@ -1,0 +1,71 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-backup
+  namespace: secureai
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: python:3.9-slim
+            command:
+            - python
+            - -c
+            - |
+              import asyncio
+              from src.database.backup_manager import DatabaseBackupManager
+
+              async def main():
+                  backup_manager = DatabaseBackupManager()
+                  backup_file = await backup_manager.create_backup()
+
+                  if backup_file and await backup_manager.verify_backup(backup_file):
+                      await backup_manager.cleanup_old_backups()
+                  else:
+                      exit(1)
+
+              asyncio.run(main())
+            env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: host
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: database
+            - name: BACKUP_BUCKET
+              value: "secureai-backups"
+            - name: BACKUP_RETENTION_DAYS
+              value: "7"
+            volumeMounts:
+            - name: google-cloud-key
+              mountPath: /var/secrets/google
+            - name: backup-temp
+              mountPath: /app/backups
+          volumes:
+          - name: google-cloud-key
+            secret:
+              secretName: gcp-credentials
+          - name: backup-temp
+            emptyDir: {}
+          restartPolicy: OnFailure

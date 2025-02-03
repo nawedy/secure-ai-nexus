@@ -5,10 +5,9 @@ namespace: secureai-production
 
 resources:
 - ../../base
-- ../../monitoring
 
-patchesStrategicMerge:
-- patches/deployment.yaml
+patches:
+- path: patches/deployment.yaml
 
 configMapGenerator:
 - name: secureai-config

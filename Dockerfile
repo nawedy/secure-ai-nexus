@@ -1,24 +1,20 @@
-FROM python:3.9-slim
+   # Use an official Python runtime as a parent image
+   FROM python:3.9-slim
 
-WORKDIR /app
+   # Set the working directory in the container
+   WORKDIR /app
 
-# Copy requirements and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+   # Copy the current directory contents into the container at /app
+   COPY . /app
 
-# Copy application code
-COPY src/ src/
-COPY setup.py .
+   # Install any needed packages specified in requirements.txt
+   RUN pip install --no-cache-dir -r requirements.txt
 
-# Install the application
-RUN pip install -e .
+   # Make port 8080 available to the world outside this container
+   EXPOSE 8080
 
-# Set environment variables
-ENV PORT=8080
-ENV PYTHONPATH=/app
+   # Define environment variable
+   ENV NAME World
 
-# Expose port
-EXPOSE 8080
-
-# Run the application
-CMD ["python", "src/scripts/deploy.py"]
+   # Run app.py when the container launches
+   CMD ["python", "src/app/main.py"]

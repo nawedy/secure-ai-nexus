@@ -8,8 +8,8 @@ spec:
     app: secureai-platform
   ports:
   - port: 80
-    targetPort: 8000
-  type: ClusterIP
+    targetPort: 8080
+  type: LoadBalancer
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

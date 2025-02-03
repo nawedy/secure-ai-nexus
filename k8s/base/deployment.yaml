@@ -19,7 +19,7 @@ spec:
         fsGroup: 2000
       containers:
       - name: secureai-platform
-        image: secureairegistry.azurecr.io/secureai-platform:latest
+        image: gcr.io/secureai-nexus/secureai-platform:1.0.0
         imagePullPolicy: Always
         securityContext:
           allowPrivilegeEscalation: false
@@ -35,7 +35,7 @@ spec:
             cpu: "500m"
             memory: "1Gi"
         ports:
-        - containerPort: 8000
+        - containerPort: 8080
         livenessProbe:
           httpGet:
             path: /health
@@ -49,6 +49,13 @@ spec:
           initialDelaySeconds: 15
           periodSeconds: 5
         env:
+        - name: PORT
+          value: "8080"
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: secureai-config
+              key: ENVIRONMENT
         - name: AZURE_TENANT_ID
           valueFrom:
             secretKeyRef:

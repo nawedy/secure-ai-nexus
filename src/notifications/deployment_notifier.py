@@ -23,6 +23,10 @@ class DeploymentNotifier:
     async def notify_deployment_status(self, status: Dict[str, Any]):
         """Send deployment status notifications"""
         try:
+            # Ensure 'stage' and 'status' keys are present
+            if 'stage' not in status or 'status' not in status:
+                raise ValueError("Missing required keys in status dictionary")
+
             message = self._format_message(status)
             await asyncio.gather(
                 self._send_slack_notification(message),

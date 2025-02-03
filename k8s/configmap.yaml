@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: secureai-platform-config
+  name: secureai-config
   namespace: production
 data:
-  APP_ENV: "production"
-  LOG_LEVEL: "INFO"
-  METRICS_ENABLED: "true"
+  PROJECT_ID: "secureai-nexus"
+  ENVIRONMENT: "production"
+  DOMAIN: "getaisecured.com"

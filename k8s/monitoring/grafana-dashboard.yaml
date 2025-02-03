@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard
+  namespace: monitoring
+data:
+  deployment-dashboard.json: |
+    {
+      "title": "SecureAI Platform Dashboard",
+      "panels": [
+        {
+          "title": "Pod Status",
+          "type": "graph",
+          "datasource": "Prometheus"
+        },
+        {
+          "title": "Request Rate",
+          "type": "graph",
+          "datasource": "Prometheus"
+        },
+        {
+          "title": "Error Rate",
+          "type": "graph",
+          "datasource": "Prometheus"
+        }
+      ]
+    }

@@ -2,37 +2,20 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: alertmanager-config
+  namespace: monitoring
 data:
   alertmanager.yml: |
     global:
       resolve_timeout: 5m
-      slack_api_url: '${SLACK_WEBHOOK_URL}'
-      
     route:
-      group_by: ['alertname', 'cluster', 'service']
+      group_by: ['alertname']
       group_wait: 30s
       group_interval: 5m
-      repeat_interval: 4h
-      receiver: 'slack-notifications'
-      routes:
-        - match:
-            severity: critical
-          receiver: 'pagerduty-critical'
-          continue: true
-        - match:
-            severity: warning
-          receiver: 'slack-notifications'
-          
+      repeat_interval: 12h
+      receiver: 'email-notifications'
     receivers:
-      - name: 'slack-notifications'
-        slack_configs:
-          - channel: '#secureai-alerts'
-            title: '[{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}'
-            text: "{{ range .Alerts }}*Alert:* {{ .Annotations.summary }}\n*Details:* {{ .Annotations.description }}\n{{ end }}"
-            
-      - name: 'pagerduty-critical'
-        pagerduty_configs:
-          - service_key: '${PAGERDUTY_SERVICE_KEY}'
-            description: '{{ .GroupLabels.alertname }}'
-            client: 'Prometheus'
-            client_url: '${PROMETHEUS_URL}' 
+    - name: 'email-notifications'
+      email_configs:
+      - to: 'alerts@getaisecured.com'
+        from: 'alertmanager@getaisecured.com'
+        smarthost: 'smtp.gmail.com:587'

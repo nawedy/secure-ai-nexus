@@ -36,3 +36,6 @@ docs/
 # Local development
 docker-compose.yml
 docker-compose.*.yml
+
+node_modules
+Dockerfile

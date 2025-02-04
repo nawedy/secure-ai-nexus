@@ -1,0 +1,181 @@
+# ML Model Training Configuration
+
+# Experiment Configuration
+experiment_name: "advanced_testing_ml_models"
+log_level: "INFO"
+
+# Training Parameters
+batch_size: 32
+epochs: 100
+validation_split: 0.2
+early_stopping_patience: 10
+
+# Model Architecture
+input_dim: 128
+feature_dim: 64
+coverage_dim: 32
+sequence_length: 50
+
+# Data Paths
+behavior_data_path: "data/behavior_validation.csv"
+coverage_data_path: "data/coverage_analysis.csv"
+anomaly_data_path: "data/anomaly_detection.csv"
+security_data_path: "data/security_analysis.csv"
+
+# Feature Columns
+behavior_feature_columns:
+  - "request_time"
+  - "response_time"
+  - "cpu_usage"
+  - "memory_usage"
+  - "error_rate"
+  - "throughput"
+  - "latency"
+  - "concurrent_users"
+
+behavior_label_column: "behavior_class"
+
+coverage_sequence_columns:
+  - "api_calls"
+  - "function_calls"
+  - "database_queries"
+  - "cache_operations"
+  - "file_operations"
+
+coverage_metric_columns:
+  - "code_coverage"
+  - "branch_coverage"
+  - "path_coverage"
+  - "function_coverage"
+
+anomaly_feature_columns:
+  - "response_time"
+  - "error_rate"
+  - "cpu_usage"
+  - "memory_usage"
+  - "network_io"
+  - "disk_io"
+  - "thread_count"
+  - "connection_count"
+
+anomaly_label_column: "is_anomaly"
+
+vulnerability_feature_columns:
+  - "input_validation"
+  - "authentication"
+  - "authorization"
+  - "data_exposure"
+  - "encryption"
+  - "session_management"
+  - "error_handling"
+  - "logging"
+
+vulnerability_label_column: "is_vulnerable"
+
+# Model Hyperparameters
+behavior_validator:
+  learning_rate: 0.001
+  dropout_rate: 0.3
+  hidden_layers: [128, 64, 32]
+  activation: "relu"
+  output_activation: "sigmoid"
+
+coverage_analyzer:
+  learning_rate: 0.001
+  dropout_rate: 0.3
+  lstm_units: [128, 64]
+  dense_units: [32]
+  activation: "relu"
+  output_activation: "sigmoid"
+
+anomaly_detector:
+  autoencoder:
+    learning_rate: 0.001
+    dropout_rate: 0.3
+    encoding_dim: 32
+    hidden_layers: [64, 32]
+    activation: "relu"
+    output_activation: "sigmoid"
+  sequence_model:
+    learning_rate: 0.001
+    dropout_rate: 0.3
+    lstm_units: [128, 64]
+    dense_units: [32]
+    activation: "relu"
+    output_activation: "sigmoid"
+
+security_analyzer:
+  vulnerability_detector:
+    learning_rate: 0.001
+    dropout_rate: 0.3
+    hidden_layers: [128, 64, 32]
+    activation: "relu"
+    output_activation: "sigmoid"
+  pattern_analyzer:
+    learning_rate: 0.001
+    dropout_rate: 0.3
+    lstm_units: [128, 64]
+    dense_units: [32]
+    activation: "relu"
+    output_activation: "sigmoid"
+
+# Monitoring Configuration
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  registry_uri: "sqlite:///mlflow.db"
+
+# Optimization Configuration
+optuna:
+  n_trials: 100
+  timeout: 7200  # 2 hours
+  pruner: "median"
+  sampler: "tpe"
+
+# Resource Configuration
+gpu_config:
+  memory_limit: 0.8  # Use 80% of available GPU memory
+  allow_growth: true
+  visible_devices: "0"  # Use first GPU
+
+# Logging Configuration
+logging:
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: "logs/training.log"
+  rotation: "1 day"
+  retention: "1 week"
+
+# Metrics Configuration
+metrics:
+  behavior:
+    - "accuracy"
+    - "precision"
+    - "recall"
+    - "f1_score"
+    - "roc_auc"
+  coverage:
+    - "mae"
+    - "mse"
+    - "rmse"
+    - "r2_score"
+  anomaly:
+    - "precision"
+    - "recall"
+    - "f1_score"
+    - "reconstruction_error"
+  security:
+    - "accuracy"
+    - "precision"
+    - "recall"
+    - "f1_score"
+    - "vulnerability_detection_rate"
+
+# Visualization Configuration
+visualization:
+  plots:
+    - "learning_curves"
+    - "confusion_matrix"
+    - "roc_curve"
+    - "precision_recall_curve"
+  save_format: "png"
+  dpi: 300
+  style: "seaborn"

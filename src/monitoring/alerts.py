@@ -1,4 +1,10 @@
-from typing import Dict, List, Optional
+"""
+This module defines the AlertManager class and related configurations for setting up
+alerts in Azure Monitor. It includes functionalities to create and manage alerts
+based on predefined configurations.
+"""
+
+
 from pydantic import BaseModel
 import logging
 from azure.monitor.alert import AlertClient
@@ -6,7 +12,20 @@ from azure.identity import DefaultAzureCredential
 
 logger = logging.getLogger(__name__)
 
+
 class AlertConfig(BaseModel):
+    """
+    Represents the configuration for a single alert.
+
+    Attributes:
+        name (str): The name of the alert.
+        description (str): A brief description of the alert.
+        severity (int): The severity level of the alert (0-4, 0 being most critical).
+        threshold (float): The threshold value for triggering the alert.
+        window_size (str): The time window for evaluating the alert condition (e.g., "5m", "1h").
+        condition (str): The condition to trigger the alert (e.g., "above", "below").
+        metric_name (str): The name of the metric being monitored.
+    """
     name: str
     description: str
     severity: int  # 0-4, 0 being most critical
@@ -15,7 +34,13 @@ class AlertConfig(BaseModel):
     condition: str  # e.g., "above", "below"
     metric_name: str
 
+
 class AlertManager:
+    """
+    Manages the creation and setup of alerts in Azure Monitor.
+
+    This class handles the interaction with Azure Monitor to create and configure alert rules.
+    """
     def __init__(self):
         self.credential = DefaultAzureCredential()
         self.alert_client = AlertClient(credential=self.credential)
@@ -52,7 +77,15 @@ class AlertManager:
         ]
 
     async def setup_alerts(self):
-        """Set up default alerts in Azure Monitor"""
+        """
+        Sets up the default alerts in Azure Monitor.
+
+        This method iterates through the `default_alerts` configurations and attempts to create each alert rule
+        in Azure Monitor.
+
+        Raises:
+            Exception: If any error occurs during the alert setup process.
+        """
         try:
             for alert_config in self.default_alerts:
                 await self.create_alert(alert_config)
@@ -62,7 +95,16 @@ class AlertManager:
             raise
 
     async def create_alert(self, config: AlertConfig):
-        """Create a new alert rule"""
+        """
+        Creates a new alert rule in Azure Monitor based on the provided configuration.
+
+        Args:
+            config (AlertConfig): The configuration for the alert rule to be created.
+
+        Raises:
+            Exception: If any error occurs during the creation of the alert rule.
+
+        """
         try:
             await self.alert_client.alert_rules.create_or_update(
                 resource_group_name="secureai-rg",

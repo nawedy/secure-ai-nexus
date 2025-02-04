@@ -1,62 +1,58 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  let email = '';
   let password = '';
   let error = '';
   let loading = false;
-  let emailError = '';
   let passwordError = '';
+  let token = '';
+
+
+  onMount(() => {
+    // Get the token from the query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    token = urlParams.get('token') || '';
+
+    if (!token) {
+      goto('/password-reset');
+    }
+  });
+
+
 
   async function handleSubmit() {
     loading = true;
     error = '';
-    emailError = '';
     passwordError = '';
 
-
     // Simple form validation
-    if (!email) {
-        emailError = 'Email is required';
-    } else if (!/^[w-.]+@([w-]+.)+[w-]{2,4}$/.test(email)) {
-        emailError = 'Invalid email format';
-    }
-
     if (!password) {
         passwordError = 'Password is required';
     }
 
-    if(emailError || passwordError){
+    if(passwordError){
       loading = false;
       return
     }
 
-
     try {
-      const response = await fetch('/api/auth/login', {
+
+      const response = await fetch(`/api/auth/reset-password?token=${token}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ password }),
       });
 
       if (response.ok) {
-        const data = await response.json();
-        // Store the token (e.g., in local storage or a cookie)
-        const token = data.access_token;
-        // Store the token in the cookie
-        document.cookie = `token=${token}; path=/; max-age=1800`; // Expires in 30 minutes
-
-        // Redirect to dashboard or another protected route
-        goto('/dashboard');
+        goto('/login');
       } else {
         const data = await response.json();
-        error = data.detail || 'Login failed';
+        error = data.detail || 'Password reset failed';
         if(Array.isArray(data.detail)){
             error = data.detail[0].msg;
         }
-
       }
     } catch (err) {
       error = 'An error occurred';
@@ -69,20 +65,15 @@
 </script>
 
 <div class="container">
-  <h1>Login</h1>
+  <h1>Reset Password</h1>
   {#if error}<div class="error">{error}</div>{/if}
   <form on:submit|preventDefault={handleSubmit}>
     <div class="form-group">
-        <label for="email">Email:</label>
-        <input type="email" id="email" bind:value={email} required />
-        {#if emailError}<div class="error">{emailError}</div>{/if}
-    </div>
-    <div class="form-group">
-      <label for="password">Password:</label>
+      <label for="password">New password:</label>
       <input type="password" id="password" bind:value={password} required />
       {#if passwordError}<div class="error">{passwordError}</div>{/if}
     </div>
-    <button type="submit" disabled={loading}>Login</button>
+    <button type="submit" disabled={loading}>Reset Password</button>
   </form>
 </div>
 

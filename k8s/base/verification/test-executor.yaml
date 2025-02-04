@@ -21,11 +21,6 @@ spec:
             env:
             - name: TEST_CONFIG
               value: /etc/verification/verification-tests.yaml
-            - name: AZURE_CREDENTIALS
-              valueFrom:
-                secretKeyRef:
-                  name: azure-credentials
-                  key: json-credentials
             volumeMounts:
             - name: test-config
               mountPath: /etc/verification

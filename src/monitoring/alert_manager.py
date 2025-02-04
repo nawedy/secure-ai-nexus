@@ -1,3 +1,10 @@
+"""
+This module contains the AlertManager class, which is responsible for
+monitoring system metrics, security conditions, and model performance. It
+processes alerts based on predefined rules and sends notifications via
+different channels such as email, Slack, and PagerDuty. It also maintains
+an alert history log.
+"""
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
@@ -12,6 +19,16 @@ import requests
 logger = logging.getLogger(__name__)
 
 class AlertManager:
+    """
+    The AlertManager class monitors system metrics, security conditions,
+    and model performance, triggering alerts based on predefined rules. It
+    manages alert configurations, history, rules, and notification channels.
+
+    Attributes:
+        alert_config (dict): Configuration settings for alerts.
+        alert_history (Path): Path to the alert history log file.
+        alert_rules (dict): Rules for triggering different types of alerts.
+    """
     """Advanced alerting system"""
 
     def __init__(self):
@@ -25,6 +42,13 @@ class AlertManager:
         }
 
     async def monitor_and_alert(self):
+        """
+        Main monitoring loop that continuously checks for alert conditions.
+        It checks system metrics, security conditions, and model performance.
+        If any alert conditions are met, it processes and sends the alerts.
+        It also updates the alert history and then waits for a predefined
+        interval before the next check.
+        """
         """Main alert monitoring loop"""
         while True:
             try:
@@ -44,6 +68,15 @@ class AlertManager:
                 logger.error(f"Alert monitoring failed: {str(e)}")
 
     async def _check_alert_conditions(self) -> List[Dict]:
+        """
+        Checks various alert conditions across the system.
+        It checks system metrics, security conditions, and model performance.
+
+        Returns:
+            List[Dict]: A list of alerts, where each alert is a dictionary
+            containing information about the type of alert, severity, and
+            other relevant details.
+        """
         """Check all alert conditions"""
         alerts = []
 
@@ -62,6 +95,15 @@ class AlertManager:
         return alerts
 
     async def _process_alert(self, alert: Dict):
+        """
+        Processes an alert by determining its severity, identifying the
+        appropriate notification channels, sending the alert via those channels,
+        and logging the alert.
+
+        Args:
+            alert (Dict): A dictionary containing the details of the alert,
+            such as its type, severity, and message.
+        """
         """Process and send alert"""
         try:
             # Determine alert severity
@@ -81,6 +123,13 @@ class AlertManager:
             logger.error(f"Alert processing failed: {str(e)}")
 
     async def _send_email_alert(self, alert: Dict):
+        """
+        Sends an alert via email.
+
+        Args:
+            alert (Dict): A dictionary containing the details of the alert,
+            including the alert message and severity.
+        """
         """Send email alert"""
         try:
             msg = MIMEText(self._format_alert_message(alert))
@@ -95,6 +144,16 @@ class AlertManager:
             logger.error(f"Email alert failed: {str(e)}")
 
     def _determine_severity(self, alert: Dict) -> str:
+        """
+        Determines the severity of an alert based on its type and other
+        characteristics.
+
+        Args:
+            alert (Dict): A dictionary containing the details of the alert.
+
+        Returns:
+            str: The severity level of the alert ('critical', 'high', 'medium', or 'low').
+        """
         """Determine alert severity"""
         if alert['type'] == 'security':
             return 'critical'

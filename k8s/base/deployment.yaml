@@ -65,21 +65,6 @@ spec:
             configMapKeyRef:
               name: secureai-config
               key: ENVIRONMENT
-        - name: AZURE_TENANT_ID
-          valueFrom:
-            secretKeyRef:
-              name: azure-secrets
-              key: tenant-id
-        - name: AZURE_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: azure-secrets
-              key: client-id
-        - name: AZURE_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: azure-secrets
-              key: client-secret
         volumeMounts:
         - name: tmp
           mountPath: /tmp

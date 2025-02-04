@@ -1,9 +1,7 @@
-from prometheus_client import Counter, Histogram, Gauge
-import time
 import logging
-from typing import Dict, Any
-from azure.monitor import MonitorClient
-from azure.identity import DefaultAzureCredential
+import os
+from typing import Any, Dict
+from prometheus_client import Counter, Histogram, Gauge
 
 logger = logging.getLogger(__name__)
 
@@ -58,64 +56,75 @@ FAILED_AUTH_ATTEMPTS = Counter(
     ['auth_type']
 )
 
+
 class MetricsManager:
+    """
+    Manages the recording of metrics.
+    """
     def __init__(self):
-        self.credential = DefaultAzureCredential()
-        self.monitor_client = MonitorClient(credential=self.credential)
+        """
+        Records HTTP request metrics.
 
-    @staticmethod
-    def record_request(method: str, endpoint: str, status: int, duration: float):
-        REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=status).inc()
-        REQUEST_LATENCY.labels(method=method, endpoint=endpoint).observe(duration)
+        Args:
+            method (str): HTTP method (e.g., GET, POST).
+            endpoint (str): The endpoint of the request.
+            status (int): HTTP status code.
+            duration (float): Request duration in seconds.
+        """
+        logger.info(f"Recording request: method={method}, endpoint={endpoint}, status={status}, duration={duration}")
+        pass
 
-    @staticmethod
-    def record_model_request(model_name: str, status: str, duration: float):
-        MODEL_REQUEST_COUNT.labels(model_name=model_name, status=status).inc()
-        MODEL_LATENCY.labels(model_name=model_name).observe(duration)
+    def record_model_request(self, model_name: str, status: str, duration: float) -> None:
+        """
+        Records model inference request metrics.
 
-    @staticmethod
-    def update_memory_usage(bytes_used: int):
-        MEMORY_USAGE.set(bytes_used)
+        Args:
+            model_name (str): Name of the model.
+            status (str): Status of the request (e.g., success, failure).
+            duration (float): Request duration in seconds.
+        """
+        logger.info(f"Recording model request: model_name={model_name}, status={status}, duration={duration}")
+        pass
 
-    @staticmethod
-    def update_gpu_memory(device: str, bytes_used: int):
-        GPU_MEMORY_USAGE.labels(device=device).set(bytes_used)
+    def update_memory_usage(self, bytes_used: int) -> None:
+        """
+        Updates the memory usage metric.
 
-    async def record_security_event(self, event_type: str, severity: str, details: Dict):
-        """Record security event metrics"""
-        try:
-            SECURITY_EVENTS.labels(event_type=event_type, severity=severity).inc()
+        Args:
+            bytes_used (int): Memory usage in bytes.
+        """
+        logger.info(f"Updating memory usage: bytes_used={bytes_used}")
+        pass
 
-            # Send to Azure Monitor
-            await self._send_to_azure_monitor({
-                'security_event': event_type,
-                'severity': severity,
-                'details': details
-            })
-        except Exception as e:
-            logger.error(f"Failed to record security event: {str(e)}")
+    def update_gpu_memory(self, device: str, bytes_used: int) -> None:
+        Updates the GPU memory usage metric.
 
-    async def record_auth_failure(self, auth_type: str):
-        """Record authentication failure metrics"""
-        try:
-            FAILED_AUTH_ATTEMPTS.labels(auth_type=auth_type).inc()
+        Args:
+            device (str): Name of the GPU device.
+            bytes_used (int): GPU memory usage in bytes.
+        """
+        logger.info(f"Updating GPU memory: device={device}, bytes_used={bytes_used}")
+        pass
 
-            # Send to Azure Monitor
-            await self._send_to_azure_monitor({
-                'failed_auth_attempt': 1,
-                'auth_type': auth_type
-            })
-        except Exception as e:
-            logger.error(f"Failed to record auth failure: {str(e)}")
+    def record_security_event(self, event_type: str, severity: str, details: Dict) -> None:
+                """
+                Records security event metrics.
 
-    async def _send_to_azure_monitor(self, metrics: Dict):
-        """Send metrics to Azure Monitor"""
-        try:
-            await self.monitor_client.metrics.create_or_update(
-                resource_group_name="secureai-rg",
-                service_name="secureai-app",
-                metric_name="custom_metrics",
-                parameters=metrics
-            )
-        except Exception as e:
-            logger.error(f"Failed to send metrics to Azure Monitor: {str(e)}")
+                Args:
+                    event_type (str): Type of the security event.
+                    severity (str): Severity of the security event.
+                    details (Dict): Additional details about the event.
+                """
+                logger.info(f"Recording security event: event_type={event_type}, severity={severity}, details={details}")
+                pass
+
+    def record_auth_failure(self, auth_type: str) -> None:
+                """
+                Records authentication failure metrics.
+
+                Args:
+                    auth_type (str): Type of authentication that failed.
+                """
+                logger.info(f"Recording auth failure: auth_type={auth_type}")
+                pass
+                

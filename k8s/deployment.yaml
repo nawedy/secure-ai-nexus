@@ -4,7 +4,7 @@ metadata:
   name: secureai-platform
   namespace: production
 spec:
-  replicas: 3
+  replicas: {{.Values.replicas}}
   progressDeadlineSeconds: 600
   revisionHistoryLimit: 10
   strategy:
@@ -50,9 +50,10 @@ spec:
               name: secureai-config
               key: PROJECT_ID
         resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+          requests:          
+            cpu: "{{.Values.cpu.request}}"
+            memory: "{{.Values.memory.request}}"
+          limits:          
+            cpu: "{{.Values.cpu.limit}}"
+            memory: "{{.Values.memory.limit}}"
+

@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""
+This module provides an advanced deployment automation system.
+
+It handles the deployment of models to various environments,
+including Kubernetes, databases, and cache systems.
+"""
 import logging
 from pathlib import Path
 import json
@@ -13,19 +19,36 @@ import os
 logger = logging.getLogger(__name__)
 
 # Set the project ID
-project_id = os.getenv('GCP_PROJECT_ID', 'secureai-nexus')
+PROJECT_ID = os.getenv('GCP_PROJECT_ID', 'secureai-nexus')
+
 
 class DeploymentOrchestrator:
-    """Advanced deployment automation system"""
+    """
+    Advanced deployment automation system.
+
+    This class orchestrates the deployment of models,
+    managing various steps such as pre-deployment checks,
+    creating deployment plans, executing deployment steps,
+    post-deployment verification, and handling failures.
+    """
 
     def __init__(self):
+        """
+        Initializes the DeploymentOrchestrator.
+
+        Sets up the deployment directory, loads the deployment configuration,
+        and initializes the Kubernetes client.
+        """
         self.deployment_path = Path('deployments')
         self.deployment_path.mkdir(exist_ok=True)
         self.config = self._load_deployment_config()
         self.k8s_client = self._initialize_kubernetes()
 
     async def deploy_model(self, model_id: str, version: str) -> Dict:
-        """Deploy model to production"""
+        """
+        Deploys a model to production.
+        Manages the entire deployment lifecycle, including pre-checks, execution, and verification.
+        """
         try:
             # Create deployment record
             deployment_id = self._generate_deployment_id()
@@ -65,7 +88,18 @@ class DeploymentOrchestrator:
             raise
 
     async def _run_pre_deployment_checks(self, model_id: str, version: str) -> bool:
-        """Run pre-deployment validation"""
+        """
+        Runs pre-deployment validation checks.
+
+        Args:
+            model_id (str): The ID of the model to be deployed.
+            version (str): The version of the model to be deployed.
+
+        Returns:
+            bool: True if all pre-deployment checks pass, False otherwise.
+
+        Raises:
+            Exception: If any error occurs during the pre-deployment checks."""
         try:
             # Check model artifacts
             if not await self._verify_model_artifacts(model_id, version):
@@ -90,7 +124,17 @@ class DeploymentOrchestrator:
             return False
 
     async def _execute_deployment_step(self, step: Dict):
-        """Execute deployment step"""
+        """
+        Executes a single deployment step.
+
+        Args:
+            step (Dict): A dictionary describing the deployment step.
+                         It should contain 'type' and 'name' keys.
+
+        Raises:
+            ValueError: If the step type is unknown.
+            Exception: If an error occurs during the step execution.
+        """
         try:
             if step['type'] == 'kubernetes':
                 await self._deploy_to_kubernetes(step)
@@ -108,7 +152,14 @@ class DeploymentOrchestrator:
             raise
 
     def _load_deployment_config(self):
-        # Load and return the deployment configuration
+        """
+        Loads the deployment configuration from a file.
+
+        Returns:
+            Dict: The loaded deployment configuration.
+
+        Raises:
+            FileNotFoundError: If the configuration file is missing."""
         return {
             'key': 'value'  # Example configuration
         }

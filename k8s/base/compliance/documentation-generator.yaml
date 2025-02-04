@@ -21,11 +21,6 @@ spec:
           value: "pdf,html,markdown"
         - name: EVIDENCE_COLLECTION_INTERVAL
           value: "24h"
-        - name: AZURE_TENANT_ID
-          valueFrom:
-            secretKeyRef:
-              name: azure-credentials
-              key: tenant-id
         volumeMounts:
         - name: compliance-config
           mountPath: /etc/compliance

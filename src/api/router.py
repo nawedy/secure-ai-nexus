@@ -1,10 +1,17 @@
+"""
+This module defines the main API router for the application.
+It aggregates routes from different endpoints.
+"""
 from fastapi import APIRouter
-from .endpoints import auth, models, monitoring
+from .endpoints import auth, monitoring
+from src.config.settings import settings
 
-# Initialize main API router
+
+
+# Initialize main API router with a prefix
 api_router = APIRouter()
 
-# Include routes from different endpoints
-api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-api_router.include_router(models.router, prefix="/models", tags=["models"])
-api_router.include_router(monitoring.router, prefix="/monitoring", tags=["monitoring"])
+# Include routes from different endpoints into the main router
+api_router.include_router(auth.router)
+api_router.include_router(monitoring.router)
+

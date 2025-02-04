@@ -1,3 +1,5 @@
+"""Module for compliance monitoring and reporting."""
+
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
@@ -10,7 +12,9 @@ import yaml
 logger = logging.getLogger(__name__)
 
 class ComplianceReporting:
-    """System compliance monitoring and reporting"""
+    """
+    System compliance monitoring and reporting.
+    """
 
     def __init__(self):
         self.compliance_path = Path('compliance')
@@ -19,7 +23,12 @@ class ComplianceReporting:
         self.report_history = self.compliance_path / 'compliance_history.json'
 
     async def generate_compliance_report(self):
-        """Generate comprehensive compliance report"""
+        """
+        Generate a comprehensive compliance report.
+
+        Returns:
+            dict: The generated compliance report.
+        """
         try:
             report = {
                 'timestamp': datetime.utcnow().isoformat(),
@@ -39,7 +48,15 @@ class ComplianceReporting:
             raise
 
     async def _check_security_compliance(self) -> Dict:
-        """Check security compliance requirements"""
+        """
+        Check security compliance requirements.
+
+        Returns:
+            Dict: A dictionary with the results of the security compliance checks.
+                - encryption: Results of encryption standards verification.
+                - authentication: Results of authentication methods verification.
+                - access_control: Results of access control verification.
+        """
         return {
             'encryption': await self._verify_encryption_standards(),
             'authentication': await self._verify_authentication_methods(),
@@ -48,7 +65,14 @@ class ComplianceReporting:
         }
 
     async def _check_privacy_compliance(self) -> Dict:
-        """Check privacy compliance requirements"""
+        """
+        Check privacy compliance requirements.
+
+        Returns:
+            Dict: A dictionary with the results of the privacy compliance checks.
+            - data_handling: Results of data handling practices verification.
+            - data_retention: Results of data retention policies verification.
+        """
         return {
             'data_handling': await self._verify_data_handling(),
             'data_retention': await self._verify_data_retention(),
@@ -57,7 +81,13 @@ class ComplianceReporting:
         }
 
     async def _save_report(self, report: Dict):
-        """Save compliance report"""
+        """
+        Save the compliance report to history and generate a detailed report.
+
+        Args:
+            report (Dict): The compliance report to save.
+
+        """
         history = []
         if self.report_history.exists():
             history = json.loads(self.report_history.read_text())
@@ -70,7 +100,17 @@ class ComplianceReporting:
         report_file.write_text(self._format_report(report))
 
     def _format_report(self, report: Dict) -> str:
-        """Format compliance report in markdown"""
+        """
+        Format the compliance report in markdown format.
+
+        Args:
+            report (Dict): The compliance report to format.
+
+        Returns:
+            str: The formatted compliance report in markdown.
+
+        """
+
         return f"""
 # Compliance Report
 Generated: {report['timestamp']}
@@ -89,7 +129,15 @@ Generated: {report['timestamp']}
 """
 
     async def _verify_encryption_standards(self) -> Dict:
-        """Verify encryption standards compliance"""
+        """
+        Verify compliance with encryption standards.
+
+        Returns:
+            Dict: A dictionary with the results of the encryption standards verification.
+                - at_rest: Results of encryption at rest verification.
+                - in_transit: Results of encryption in transit verification.
+                - key_management: Results of key management practices verification.
+        """
         try:
             return {
                 'at_rest': await self._check_encryption_at_rest(),
@@ -101,7 +149,15 @@ Generated: {report['timestamp']}
             return {'status': 'failed', 'error': str(e)}
 
     async def _verify_authentication_methods(self) -> Dict:
-        """Verify authentication methods compliance"""
+        """
+        Verify compliance with authentication methods.
+
+        Returns:
+            Dict: A dictionary with the results of the authentication methods verification.
+                - mfa: Results of multi-factor authentication verification.
+                - password_policy: Results of password policy verification.
+                - session_management: Results of session management verification.
+        """
         try:
             return {
                 'mfa': await self._check_mfa_implementation(),
@@ -113,7 +169,13 @@ Generated: {report['timestamp']}
             return {'status': 'failed', 'error': str(e)}
 
     async def _notify_violations(self, report: Dict):
-        """Notify about compliance violations"""
+        """
+        Notify about compliance violations.
+
+        Args:
+            report (Dict): The compliance report to check for violations.
+
+        """
         violations = self._get_violations(report)
         if violations:
             await self._send_violation_notifications(violations)
@@ -121,6 +183,16 @@ Generated: {report['timestamp']}
 
     def _format_section(self, section: Dict) -> str:
         """Format report section in markdown"""
+        """
+        Format a report section in markdown format.
+
+        Args:
+            section (Dict): The section to format.
+
+        Returns:
+            str: The formatted section in markdown.
+
+        """
         content = []
         for key, value in section.items():
             status = "✅" if value.get('status') == 'passed' else "❌"
@@ -129,6 +201,7 @@ Generated: {report['timestamp']}
             if value.get('details'):
                 content.append(f"Details: {value['details']}")
         return "\n".join(content)
+
 
 if __name__ == "__main__":
     compliance = ComplianceReporting()

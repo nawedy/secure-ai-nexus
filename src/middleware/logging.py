@@ -1,14 +1,28 @@
-from fastapi import Request
+from fastapi import Request, Response
 import logging
 import time
-import json
-from typing import Callable
+from typing import Callable, Any
 import uuid
 
 logger = logging.getLogger(__name__)
 
-async def logging_middleware(request: Request, call_next: Callable):
-    """Middleware to log all requests and responses"""
+
+async def logging_middleware(request: Request, call_next: Callable) -> Any:
+    """Middleware to log all incoming requests and their corresponding responses.
+
+    Args:
+        request (Request): The incoming FastAPI Request object.
+        call_next (Callable): The next callable in the middleware stack.
+
+    Returns:
+        Any: The response from the next middleware or the endpoint.
+
+    Raises:
+        Exception: If any error occurs during the request processing, it is raised after logging the error.
+
+    Example:
+        
+    """
     request_id = str(uuid.uuid4())
     start_time = time.time()
 

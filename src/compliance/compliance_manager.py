@@ -1,22 +1,49 @@
-"""
-Full Compliance Implementation
-Implements comprehensive compliance management system
+"""Full Compliance Implementation.
+
+This module implements a comprehensive compliance management system
+to ensure that the application adheres to various regulatory and
+security standards. It provides functionality for validating compliance,
+generating reports, and enforcing policies.
+
+Classes:
+    ComplianceManager: Manages compliance validation, reporting, and enforcement.
+
 """
 
 from typing import Dict, List, Optional
 from datetime import datetime
 import asyncio
 
+
 class ComplianceManager:
+    """Manages compliance validation, reporting, and enforcement.
+
+    This class orchestrates the validation of compliance across various standards,
+    generates detailed compliance reports, and enforces policies to maintain compliance.
+
+    Attributes:
+        validators (List): A list of compliance validators.
+        reporters (List): A list of compliance reporters.
+        monitor (ComplianceMonitor): A monitor for tracking compliance status.
+        enforcer (ComplianceEnforcer): An enforcer for applying compliance policies.
+
+    """
+
     def __init__(self):
+        """Initializes the ComplianceManager with validators, reporters, monitor, and enforcer."""
         self.validators = self._initialize_validators()
         self.reporters = self._initialize_reporters()
         self.monitor = ComplianceMonitor()
         self.enforcer = ComplianceEnforcer()
 
     async def validate_compliance(self, context: Dict) -> ComplianceResult:
-        """
-        Validate compliance across all required standards
+        """Validate compliance across all required standards.
+
+        Args:
+            context (Dict): The context data to validate compliance against.
+
+        Returns:
+            ComplianceResult: The result of the compliance validation.
         """
         results = []
         for validator in self.validators:
@@ -33,8 +60,13 @@ class ComplianceManager:
         )
 
     async def generate_compliance_report(self) -> ComplianceReport:
-        """
-        Generate comprehensive compliance report
+        """Generate a comprehensive compliance report.
+
+        This method collects data from various sources, generates a report,
+        validates the report, and stores it.
+
+        Returns:
+            ComplianceReport: The generated compliance report.
         """
         data = await asyncio.gather(
             self.collect_audit_logs(),
@@ -50,8 +82,11 @@ class ComplianceManager:
         return report
 
     async def enforce_compliance(self, policy: CompliancePolicy):
-        """
-        Enforce compliance policies
+        """Enforce compliance policies.
+
+        Args:
+            policy (CompliancePolicy): The policy to enforce.
+
         """
         await self.enforcer.apply_policy(policy)
         await self.monitor.verify_enforcement(policy)

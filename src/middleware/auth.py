@@ -1,41 +1,29 @@
-from google.auth import default
-from google.cloud import secretmanager
+from fastapi import Depends, HTTPException, status
+from src.utils.security import verify_token
+from sqlalchemy.orm import Session
+from src.database.database import get_db
+from src.database import models
 
-# Remove Azure imports
-# from azure.identity import DefaultAzureCredential
+def authenticate_user(token: str, db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = verify_token(token)
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except:
+        raise credentials_exception
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if user is None:
+        raise credentials_exception
+    return user
 
-# Add rate limiting
-from fastapi import Request, HTTPException
-from fastapi.security import OAuth2PasswordBearer
-from datetime import datetime, timedelta
-import jwt
-from typing import Dict, List
-
-class AuthMiddleware:
-    def __init__(self):
-        self.rate_limits: Dict[str, List[datetime]] = {}
-        self.max_requests = 100  # Per minute
-        self.oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-    async def __call__(self, request: Request, call_next):
-        # Rate limiting
-        client_ip = request.client.host
-        now = datetime.utcnow()
-
-        # Clean old requests
-        if client_ip in self.rate_limits:
-            self.rate_limits[client_ip] = [
-                timestamp for timestamp in self.rate_limits[client_ip]
-                if now - timestamp < timedelta(minutes=1)
-            ]
-
-        # Check rate limit
-        if len(self.rate_limits.get(client_ip, [])) >= self.max_requests:
-            raise HTTPException(status_code=429, detail="Rate limit exceeded")
-
-        # Add request timestamp
-        if client_ip not in self.rate_limits:
-            self.rate_limits[client_ip] = []
-        self.rate_limits[client_ip].append(now)
-
-        return await call_next(request)
+def authorize_user(user = Depends(authenticate_user), roles: list[str] = []):
+    if roles:
+        #TODO: Add authorization logic
+        print("TODO: add authorization logic")
+    return user

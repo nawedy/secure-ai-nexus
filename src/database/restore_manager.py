@@ -1,27 +1,51 @@
+"""
+Module: Restore Manager
+
+This module provides functionalities to manage the restoration of database backups.
+It interacts with Google Cloud Storage to list available backups, download backups,
+and restore them to a target database. It also includes verification checks for backup
+integrity and restoration success.
+"""
 import logging
 import asyncio
-import subprocess
-from datetime import datetime
 from pathlib import Path
 import os
-from typing import Optional, List, Dict
-from google.cloud import storage
+from typing import List, Dict
 import tempfile
+import shutil
+import hashlib
+
+from google.cloud import storage
+
 from ..monitoring.backup_metrics import BackupMetricsManager
 
 logger = logging.getLogger(__name__)
 
 class RestoreManager:
+    """
+    Manages the restoration of database backups.
+    
+    This class handles interactions with Google Cloud Storage for backup operations
+    and manages the process of restoring backups to a specified target database.
+    """
     def __init__(self):
+        """
+        Initializes the RestoreManager with necessary configurations.
+        
+        Sets up the Google Cloud Storage client, specifies the backup bucket,
+        initializes the metrics manager, and prepares the restore directory.
+        """
         self.storage_client = storage.Client()
         self.bucket_name = os.getenv("BACKUP_BUCKET", "secureai-backups")
         self.bucket = self.storage_client.bucket(self.bucket_name)
         self.metrics = BackupMetricsManager()
         self.restore_dir = Path("/app/restore")
-        self.restore_dir.mkdir(exist_ok=True)
+        self.restore_dir.mkdir(exist_ok=True) 
 
     async def list_available_backups(self) -> List[Dict]:
-        """List all available backups with metadata"""
+        """Lists all available backups with metadata.
+        Returns a list of dictionaries, each containing metadata of a backup.
+        """
         try:
             backups = []
             blobs = self.bucket.list_blobs(prefix="backups/")
@@ -42,7 +66,19 @@ class RestoreManager:
             raise
 
     async def restore_backup(self, backup_name: str, target_db: str) -> bool:
-        """Restore a specific backup to target database"""
+        """
+        Restores a specific backup to the target database.
+
+        Downloads the specified backup from Google Cloud Storage, verifies its integrity,
+        creates the target database if it does not exist, and then restores the backup.
+
+        Args:
+            backup_name (str): The name of the backup file to restore.
+            target_db (str): The name of the database to restore the backup to.
+
+        Returns:
+            bool: True if the restoration was successful, False otherwise.
+        """
         temp_dir = None
         try:
             temp_dir = tempfile.mkdtemp()
@@ -97,10 +133,22 @@ class RestoreManager:
             # Cleanup
             if temp_dir and os.path.exists(temp_dir):
                 import shutil
-                shutil.rmtree(temp_dir)
+                shutil.rmtree(temp_dir) 
 
     async def _verify_backup(self, backup_file: Path, expected_checksum: str) -> bool:
-        """Verify backup file integrity"""
+        """
+        Verifies the integrity of a backup file.
+
+        Checks the backup structure and, if a checksum is provided, verifies it against
+        the calculated checksum of the file.
+
+        Args:
+            backup_file (Path): The path to the backup file.
+            expected_checksum (str): The expected checksum of the backup file.
+
+        Returns:
+            bool: True if the backup is valid, False otherwise.
+        """
         try:
             # Verify backup structure
             test_cmd = ["pg_restore", "--list", str(backup_file)]
@@ -116,7 +164,6 @@ class RestoreManager:
 
             # Verify checksum if provided
             if expected_checksum:
-                import hashlib
                 sha256 = hashlib.sha256()
                 with open(backup_file, "rb") as f:
                     for chunk in iter(lambda: f.read(4096), b""):
@@ -131,7 +178,15 @@ class RestoreManager:
             return False
 
     async def _create_database(self, db_name: str):
-        """Create database if it doesn't exist"""
+        """
+        Creates a database if it does not exist.
+
+        Uses psql to attempt to create a database. Ignores the error if the database
+        already exists.
+
+        Args:
+            db_name (str): The name of the database to create.
+        """
         try:
             cmd = [
                 "psql",
@@ -159,7 +214,17 @@ class RestoreManager:
             raise
 
     async def _verify_restoration(self, db_name: str) -> bool:
-        """Verify database restoration"""
+        """
+        Verifies the database restoration by checking for the presence of tables.
+
+        Executes a simple query to count the tables in the database. If the query
+        is successful, it indicates that the database restoration was likely successful.
+
+        Args:
+            db_name (str): The name of the restored database.
+        Returns:
+            bool: True if restoration verification is successful, False otherwise.
+        """
         try:
             cmd = [
                 "psql",

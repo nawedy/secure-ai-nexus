@@ -21,11 +21,6 @@ spec:
           value: "1h"
         - name: EVIDENCE_RETENTION
           value: "365d"
-        - name: AZURE_CREDENTIALS
-          valueFrom:
-            secretKeyRef:
-              name: azure-credentials
-              key: json-credentials
         volumeMounts:
         - name: evidence
           mountPath: /var/compliance/evidence

@@ -1,13 +1,21 @@
-from fastapi import APIRouter, Response
-from ..monitoring.metrics import MetricsManager
+"""
+This module defines health check endpoints for the application.
+It provides endpoints for Kubernetes probes to check the health and readiness of the application.
+"""
+
+from fastapi import APIRouter, Response, Depends
+from src.config.settings import settings
 import psutil
 import logging
 
-router = APIRouter()
+router = APIRouter(prefix=settings.API_PREFIX)
+"""APIRouter instance for health check endpoints."""
 logger = logging.getLogger(__name__)
-metrics = MetricsManager()
+"""Logger instance for health check module."""
 
-@router.get("/health")
+
+
+@router.get("/health", tags=["Health Check"])
 async def health_check():
     """
     Health check endpoint for Kubernetes probes
@@ -15,7 +23,6 @@ async def health_check():
     try:
         # Check system resources
         memory = psutil.virtual_memory()
-        metrics.update_memory_usage(memory.used)
 
         return {
             "status": "healthy",
@@ -26,8 +33,11 @@ async def health_check():
         logger.error(f"Health check failed: {str(e)}")
         return Response(status_code=500)
 
-@router.get("/readiness")
+@router.get("/readiness", tags=["Health Check"])
 async def readiness_check():
+    """
+    Checks the readiness of the application.
+    """
     """
     Readiness check endpoint for Kubernetes probes
     """
@@ -44,6 +54,10 @@ async def readiness_check():
         return Response(status_code=503)
 
 async def check_database():
+    """
+    Checks the database connectivity.
+    Raises:
+        Exception: If database connection fails."""
     """Check database connectivity"""
     from ...models.database import engine
     try:
@@ -54,6 +68,10 @@ async def check_database():
         raise
 
 async def check_model_service():
+    """
+    Checks the model service availability.
+    Raises:
+        Exception: If model service is unavailable."""
     """Check model service availability"""
     from ...models.registry import model_registry
     try:

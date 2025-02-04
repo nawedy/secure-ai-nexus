@@ -31,9 +31,8 @@
       return
     }
 
-
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,21 +41,14 @@
       });
 
       if (response.ok) {
-        const data = await response.json();
-        // Store the token (e.g., in local storage or a cookie)
-        const token = data.access_token;
-        // Store the token in the cookie
-        document.cookie = `token=${token}; path=/; max-age=1800`; // Expires in 30 minutes
-
-        // Redirect to dashboard or another protected route
-        goto('/dashboard');
+       
+        goto('/login');
       } else {
         const data = await response.json();
-        error = data.detail || 'Login failed';
+        error = data.detail || 'Registration failed';
         if(Array.isArray(data.detail)){
             error = data.detail[0].msg;
         }
-
       }
     } catch (err) {
       error = 'An error occurred';
@@ -69,7 +61,7 @@
 </script>
 
 <div class="container">
-  <h1>Login</h1>
+  <h1>Register</h1>
   {#if error}<div class="error">{error}</div>{/if}
   <form on:submit|preventDefault={handleSubmit}>
     <div class="form-group">
@@ -82,7 +74,7 @@
       <input type="password" id="password" bind:value={password} required />
       {#if passwordError}<div class="error">{passwordError}</div>{/if}
     </div>
-    <button type="submit" disabled={loading}>Login</button>
+    <button type="submit" disabled={loading}>Register</button>
   </form>
 </div>
 

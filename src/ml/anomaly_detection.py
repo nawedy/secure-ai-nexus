@@ -1,6 +1,9 @@
-"""
-Advanced Anomaly Detection System
-Implements sophisticated anomaly detection using ensemble ML models
+"""Advanced Anomaly Detection System.
+
+This module implements sophisticated anomaly detection using an ensemble of
+machine learning models. It utilizes Isolation Forest, LSTM, and Random
+Forest classifiers to detect anomalies in data. It also provides in-depth
+analysis of the detected anomalies.
 """
 
 import numpy as np
@@ -11,8 +14,19 @@ from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 
 class AnomalyDetector:
-    """
-    Advanced anomaly detection system using ensemble of ML models
+    """Advanced Anomaly Detection System.
+
+    This class provides an advanced anomaly detection system using an ensemble
+    of machine learning models. It utilizes Isolation Forest, Random Forest,
+    and LSTM models to detect anomalies. It also provides methods to combine
+    predictions from these models and analyze patterns in the detected
+    anomalies.
+
+    Attributes:
+        isolation_forest (IsolationForest): Isolation Forest model.
+        scaler (StandardScaler): StandardScaler for data preprocessing.
+        lstm_model (Sequential): LSTM model for sequence-based anomaly detection.
+        random_forest (RandomForestClassifier): Random Forest classifier.
     """
 
     def __init__(self):
@@ -33,7 +47,18 @@ class AnomalyDetector:
         )
 
     def _build_lstm_model(self) -> Sequential:
-        """Build LSTM model for sequence-based anomaly detection"""
+        """Build LSTM model for sequence-based anomaly detection.
+
+        This method constructs an LSTM model for sequence-based anomaly
+        detection. It uses multiple LSTM layers, dropout layers, and dense
+        layers to build the model.
+
+        Returns:
+            Sequential: The compiled LSTM model.
+
+        Raises:
+            Any exceptions raised during model creation or compilation.
+        """
         model = Sequential([
             LSTM(128, input_shape=(None, 50), return_sequences=True),
             Dropout(0.2),
@@ -56,8 +81,23 @@ class AnomalyDetector:
         data: np.ndarray,
         context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """
-        Detect anomalies using ensemble approach
+        """Detect anomalies using an ensemble approach.
+
+        This method detects anomalies in the given data using an ensemble
+        approach, combining predictions from Isolation Forest, Random Forest,
+        and LSTM models.
+
+        Args:
+            data (np.ndarray): The input data as a NumPy array.
+            context (Optional[Dict[str, Any]]): Optional context data for
+                analyzing anomaly patterns.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the detected anomalies,
+                patterns, severity, and recommendations.
+
+        Raises:
+            Any exceptions raised during prediction or analysis.
         """
         # Preprocess data
         scaled_data = self.scaler.fit_transform(data)
@@ -98,8 +138,24 @@ class AnomalyDetector:
         lstm_preds: np.ndarray,
         weights: List[float]
     ) -> np.ndarray:
-        """
-        Combine predictions from multiple models using weighted voting
+        """Combine predictions from multiple models using weighted voting.
+
+        This method combines predictions from Isolation Forest, Random Forest,
+        and LSTM models using a weighted voting approach.
+
+        Args:
+            if_preds (np.ndarray): Predictions from the Isolation Forest model.
+            rf_probas (np.ndarray): Probability predictions from the Random
+                Forest model.
+            lstm_preds (np.ndarray): Predictions from the LSTM model.
+            weights (List[float]): Weights for each model's predictions.
+
+        Returns:
+            np.ndarray: Combined predictions as a NumPy array.
+
+        Raises:
+            ValueError: If the lengths of the predictions and weights do not
+                match.
         """
         # Normalize isolation forest predictions
         if_normalized = np.where(if_preds == 1, 0, 1)
@@ -119,8 +175,24 @@ class AnomalyDetector:
         predictions: np.ndarray,
         context: Optional[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """
-        Analyze patterns in detected anomalies
+        """Analyze patterns in detected anomalies.
+
+        This method analyzes patterns in the detected anomalies by examining
+        temporal patterns, clustering anomalies, analyzing feature
+        correlations, and optionally, analyzing context information.
+
+        Args:
+            data (np.ndarray): The original input data.
+            predictions (np.ndarray): The anomaly predictions.
+            context (Optional[Dict[str, Any]]): Optional context data for
+                analysis.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the analyzed patterns,
+                clusters, correlations, and context analysis.
+
+        Raises:
+            Any exceptions raised during pattern analysis.
         """
         anomaly_indices = np.where(predictions)[0]
 
@@ -157,8 +229,21 @@ class AnomalyDetector:
         data: np.ndarray,
         anomaly_indices: np.ndarray
     ) -> Dict[str, Any]:
-        """
-        Analyze temporal patterns in anomalies
+        """Analyze temporal patterns in anomalies.
+
+        This method analyzes the temporal patterns in the detected anomalies,
+        including frequency, periodicity, burst patterns, and trends.
+
+        Args:
+            data (np.ndarray): The original input data.
+            anomaly_indices (np.ndarray): Indices of the detected anomalies.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the temporal patterns
+                analysis results.
+
+        Raises:
+            Any exceptions raised during temporal pattern analysis.
         """
         # Calculate time differences between anomalies
         time_diffs = np.diff(anomaly_indices)
@@ -175,8 +260,22 @@ class AnomalyDetector:
         anomaly_data: np.ndarray,
         context: Optional[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """
-        Cluster anomalies to identify patterns
+        """Cluster anomalies to identify patterns.
+
+        This method clusters the detected anomalies using DBSCAN to identify
+        patterns and groups.
+
+        Args:
+            anomaly_data (np.ndarray): The data of the detected anomalies.
+            context (Optional[Dict[str, Any]]): Optional context data for
+                clustering.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the cluster analysis
+                results.
+
+        Raises:
+            Any exceptions raised during anomaly clustering.
         """
         from sklearn.cluster import DBSCAN
 
@@ -204,8 +303,21 @@ class AnomalyDetector:
         return np.mean(severity_factors)
 
     def _generate_recommendations(self, patterns: Dict[str, Any]) -> List[str]:
-        """
-        Generate recommendations based on anomaly patterns
+        """Generate recommendations based on anomaly patterns.
+
+        This method generates recommendations based on the analyzed anomaly
+        patterns, including frequency, clusters, and trends.
+
+        Args:
+            patterns (Dict[str, Any]): The analyzed anomaly patterns.
+
+        Returns:
+            List[str]: A list of recommendations based on the anomaly
+                patterns.
+
+        Raises:
+            Any exceptions raised during recommendation generation.
+
         """
         recommendations = []
 

@@ -1,3 +1,9 @@
+"""
+This module defines the core model service of the SecureAI Platform, 
+including model generation, health checks, and model listing functionalities. 
+It integrates with security features, monitoring, and data protection mechanisms.
+"""
+
 from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Literal
@@ -17,7 +23,10 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SecureAI Platform")
 model_registry = ModelRegistry()
+"""Model registry for managing registered models."""
+
 compliance_monitor = ComplianceMonitor()
+"""Compliance monitor for tracking operations."""
 
 class GenerationRequest(BaseModel):
     text: str
@@ -25,11 +34,27 @@ class GenerationRequest(BaseModel):
     max_length: Optional[int] = 1024
     temperature: Optional[float] = 0.7
 
+
 @app.post("/generate")
 async def generate(
     request: GenerationRequest,
     api_key: str = Depends(security_manager.verify_api_key)
 ):
+    """
+    Generates text based on the given request parameters and the selected model.
+
+    Args:
+        request (GenerationRequest): The generation request containing text, model name, max length, and temperature.
+        api_key (str): The API key for authentication and rate limiting.
+
+    Returns:
+        dict: The generated text, the model used, and the duration of the operation.
+
+    Raises:
+        HTTPException: If there is an error during the generation process, including rate limiting or model issues.
+    """
+
+
     start_time = time.time()
     try:
         # Rate limiting
@@ -85,6 +110,15 @@ async def generate(
 
 @app.get("/health")
 async def health_check():
+    """
+    Performs a health check on the service.
+
+    Returns:
+        dict: A dictionary indicating the service's health status, current timestamp, and loaded models.
+    """
+
+
+
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
@@ -93,6 +127,13 @@ async def health_check():
 
 @app.get("/models")
 async def list_models():
+    """
+    Lists the available models for text generation.
+
+    Returns:
+        dict: A dictionary listing the available models and their metadata.
+    """
+
     return {
         "available_models": [
             model_registry.metadata[name] for name in ["deepseek", "qwen"]

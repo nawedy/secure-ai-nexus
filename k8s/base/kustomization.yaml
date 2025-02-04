@@ -6,6 +6,45 @@ resources:
 - service.yaml
 - configmap.yaml
 - namespace.yaml
+- hpa.yaml
+- ingress.yaml
+- monitoring.yaml
+- network-policy.yaml
+- pdb.yaml
+- pod-security-policy.yaml
+- compliance/compliance-monitor.yaml
+- compliance/documentation-generator.yaml
+- compliance/evidence-collector.yaml
+- documentation/docs-ingress.yaml
+- documentation/docs-monitor.yaml
+- documentation/docs-service.yaml
+- dr/dr-test-executor.yaml
+- dr/dr-test-monitoring.yaml
+- dr/dr-test-reporter.yaml
+- dr/dr-test-suite.yaml
+- dr/dr-test.yaml
+- dr/test-executor.yaml
+- dr/test-rbac.yaml
+- dr/test-scenarios.yaml
+- monitoring/alert-channels.yaml
+- monitoring/alert-manager.yaml
+- monitoring/alert-templates.yaml
+- monitoring/backup-validation-dashboard.yaml
+- monitoring/backup-validation-metrics.yaml
+- monitoring/custom-dashboards.yaml
+- monitoring/dashboard-updater.yaml
+- monitoring/dr-monitor.yaml
+- monitoring/extended-alert-templates.yaml
+- monitoring/grafana-dashboard.yaml
+- monitoring/prometheus-rules.yaml
+- monitoring/prometheus-servicemonitor.yaml
+- performance/optimizer.yaml
+- performance/performance-monitor.yaml
+- performance/redis.yaml
+- verification/test-executor.yaml
+- verification/verification-dashboard.yaml
+- verification/verification-monitor.yaml
+
 
 labels:
   app: secureai-platform

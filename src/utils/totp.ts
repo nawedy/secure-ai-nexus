@@ -1,5 +1,6 @@
 import { authenticator } from 'otplib';
 import { createHash } from 'crypto';
+import * as qrcode from 'qrcode';
 
 // Configure TOTP settings
 authenticator.options = {
@@ -28,10 +29,7 @@ export const generateTOTP = async (
     secret
   );
 
-  // Generate QR code
-  const qrCode = await import('qrcode').then(qrcode => 
-    qrcode.toDataURL(uri)
-  );
+    const qrCode = await qrcode.toDataURL(uri)
 
   return {
     secret,

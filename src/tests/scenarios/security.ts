@@ -1,5 +1,5 @@
-import { TestScenario } from '@/tests/types';
-import { SecurityConfig } from '@/config/security';
+import { TestScenario, TestStepResult } from '@/tests/types';
+import { SecurityConfig, SecurityValidationResult } from '@/config/security';
 
 /**
  * Security Test Scenarios
@@ -24,7 +24,7 @@ export class SecurityScenarios {
           action: async () => {
             // Implementation
           },
-          validation: async (result) => {
+          validation: async (result: TestStepResult): Promise<SecurityValidationResult> => {
             // Validation
           }
         },
@@ -32,7 +32,7 @@ export class SecurityScenarios {
           name: 'MFA Challenge',
           action: async () => {
             // Implementation
-          },
+          },        
           validation: async (result) => {
             // Validation
           }

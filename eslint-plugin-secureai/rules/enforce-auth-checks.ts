@@ -1,5 +1,5 @@
 import { Rule } from 'eslint';
-import { Node, CallExpression, FunctionDeclaration, ArrowFunctionExpression } from 'estree';
+import { Node, CallExpression, FunctionDeclaration, ArrowFunctionExpression, Literal, ArrayExpression } from 'estree';
 
 const AUTH_PATTERNS = {
   authFunctions: [
@@ -59,22 +59,12 @@ const rule: Rule.RuleModule = {
 
   create(context) {
     const hasAuthCheck = (node: Node): boolean => {
-      let hasAuth = false;
-
-      // Walk the AST to find auth checks
-      context.getAncestors().forEach(ancestor => {
-        if (ancestor.type === 'CallExpression') {
-          const callExpr = ancestor as CallExpression;
-          if (
-            callExpr.callee.type === 'Identifier' &&
-            AUTH_PATTERNS.authFunctions.includes(callExpr.callee.name)
-          ) {
-            hasAuth = true;
-          }
-        }
-      });
-
-      return hasAuth;
+      const ancestors = context.getAncestors();
+      return ancestors.some(ancestor =>
+        ancestor.type === 'CallExpression' &&
+        ancestor.callee.type === 'Identifier' &&
+        AUTH_PATTERNS.authFunctions.includes(ancestor.callee.name)
+      );
     };
 
     const hasAuthDecorator = (node: Node): boolean => {
@@ -95,23 +85,26 @@ const rule: Rule.RuleModule = {
       const middlewareArg = callExpr.arguments[0];
       if (middlewareArg.type !== 'ArrayExpression') return false;
 
-      return middlewareArg.elements.some(element =>
-        element.type === 'Identifier' &&
-        element.name &&
-        AUTH_PATTERNS.authMiddleware.includes(element.name) // Fix: Check if element.name exists
-      );
-    };
-
-    const isString = (value: any): value is string => {
-      return typeof value === 'string';
-    };
-    const includesSensitiveOperation = (value: string): boolean => {
-        return AUTH_PATTERNS.sensitiveOperations.some(op => value.includes(op))
+      const arrayExpr = middlewareArg as ArrayExpression;
+      return arrayExpr.elements.some(element => {
+        if (!element) return false;
+        return element.type === 'Identifier' &&
+          element.name &&
+          AUTH_PATTERNS.authMiddleware.includes(element.name);
+      });
     };
 
     const isSensitiveOperation = (node: Node): boolean => {
       const functionName = context.getSourceCode().getText(node).toLowerCase();
       return AUTH_PATTERNS.sensitiveOperations.some(op => functionName.includes(op));
+    };
+
+    const hasSensitiveRoutePath = (routePath: Node | undefined): boolean => {
+      if (!routePath || routePath.type !== 'Literal') return false;
+
+      const pathValue = (routePath as Literal).value;
+      return typeof pathValue === 'string' &&
+        AUTH_PATTERNS.sensitiveOperations.some(op => pathValue.includes(op));
     };
 
     return {
@@ -160,19 +153,13 @@ const rule: Rule.RuleModule = {
           node.callee.property.type === 'Identifier' &&
           ['get', 'post', 'put', 'delete', 'patch'].includes(node.callee.property.name.toLowerCase())
         ) {
-          if (!hasAuthMiddleware(node) ) {
-            // Check if the route path indicates a sensitive operation
-            const routePath = node.arguments[0];
-            if (
-             routePath?.type === 'Literal' &&
-              typeof routePath.value === 'string' &&
-              AUTH_PATTERNS.sensitiveOperations.some(op => routePath.value.includes(op))
-            ) {
-              context.report({
-                node,
-                messageId: 'missingAuthMiddleware',
-              });
-            }
+          const routePath = node.arguments[0];
+
+          if (!hasAuthMiddleware(node) && hasSensitiveRoutePath(routePath)) {
+            context.report({
+              node,
+              messageId: 'missingAuthMiddleware',
+            });
           }
         }
       },

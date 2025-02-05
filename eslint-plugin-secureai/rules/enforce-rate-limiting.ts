@@ -1,8 +1,8 @@
 import { Rule } from 'eslint';
-import { Node, CallExpression, Identifier, ImportDeclaration } from 'estree';
+import { Node, CallExpression, Identifier, ImportDeclaration, ObjectExpression, Property } from 'estree';
 
 const RATE_LIMIT_PATTERNS = {
-  pythonLibraries: { 
+  pythonLibraries: {
     recommended: [
       'fastapi.middleware.ratelimit',
       'starlette.middleware.ratelimit',
@@ -72,60 +72,41 @@ const rule: Rule.RuleModule = {
     let hasDistributedStorage = false;
     let hasFallbackMechanism = false;
 
-    const checkRateLimitConfig = (node: Node) => {
-      if (node.type === 'ObjectExpression') {
-        node.properties.forEach(prop => {
-          if (prop.type === 'Property' && prop.key.type === 'Identifier') {
-            // Check rate limit values
-            if (prop.key.name === 'maxRequests' && prop.value.type === 'Literal') {
-              if (typeof prop.value.value === 'number') {
-                const maxRequests: number = prop.value.value;
-                if (maxRequests > RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests) {
-                  context.report({
-                    node: prop,
-                    messageId: 'insufficientLimit',
-                    data: {
-                      current: maxRequests,
-                      recommended: RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests,
-                    },
-                  });
-                }
+    const checkRateLimitConfig = (node: ObjectExpression) => {
+      node.properties.forEach(prop => {
+        if (prop.type === 'Property' && prop.key.type === 'Identifier') {
+          // Check rate limit values
+          if (prop.key.name === 'maxRequests' && prop.value.type === 'Literal') {
+            if (typeof prop.value.value === 'number') {
+              const maxRequests: number = prop.value.value;
+              if (maxRequests > RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests) {
+                context.report({
+                  node: prop,
+                  messageId: 'insufficientLimit',
+                  data: {
+                    current: maxRequests,
+                    recommended: RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests,
+                  },
+                });
               }
-            } else if (typeof prop.value.value === 'string') {
-              context.report({
-                node: prop,
-                messageId: 'insecureWindow',
-                data: {
-                  window: prop.value.value,
-                  recommended: RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests,
-                },
-              });
             }
-            // Check window size
-            if (prop.key.name === 'window' && prop.value.type === 'Literal') {
-              if (typeof prop.value.value === 'number') {
-                const window = prop.value.value;
-                if (window > 3600) {
-                  context.report({
-                    node: prop,
-                    messageId: 'insecureWindow',
-                    data: { window: window },
-                  });
-                }
-              } else if (typeof prop.value.value === 'string') {
+          }
+
+          // Check window size
+          if (prop.key.name === 'window' && prop.value.type === 'Literal') {
+            if (typeof prop.value.value === 'number') {
+              const windowValue = prop.value.value;
+              if (windowValue > 3600) {
                 context.report({
                   node: prop,
                   messageId: 'insecureWindow',
-                  data: { window: prop.value.value },
+                  data: { window: windowValue },
                 });
               }
-
-            }
-
             }
           }
-        });
-      }
+        }
+      });
     };
 
     const checkEndpointSecurity = (node: Node) => {
@@ -142,7 +123,7 @@ const rule: Rule.RuleModule = {
         }
       });
 
-        if (!hasRateLimit) {
+      if (!hasRateLimit) {
         context.report({
           node,
           messageId: 'missingRateLimit',
@@ -158,7 +139,7 @@ const rule: Rule.RuleModule = {
       if (
         importSource.includes('redis') || importSource.includes('memcached')
       ) {
-            hasDistributedStorage = true;
+        hasDistributedStorage = true;
       }
     };
 
@@ -175,7 +156,6 @@ const rule: Rule.RuleModule = {
       },
 
       // Check endpoint decorators
-
       FunctionDeclaration(node) {
         if (node.id && (
           node.id.name.toLowerCase().includes('handler') ||
@@ -183,7 +163,6 @@ const rule: Rule.RuleModule = {
           node.id.name.toLowerCase().includes('route')
         )) {
           checkEndpointSecurity(node);
-
         }
       },
 
@@ -193,7 +172,6 @@ const rule: Rule.RuleModule = {
       },
 
       // Check for fallback mechanisms
-
       TryStatement(node) {
         if (context.getSourceCode().getText(node).includes('rate_limit')) {
           hasFallbackMechanism = true;
@@ -203,18 +181,16 @@ const rule: Rule.RuleModule = {
       // Program exit
       'Program:exit'() {
         if (!hasGlobalRateLimit) {
-           context.report({
-             node: null,
-             messageId: 'noGlobalLimit',
-           });
-         }
+          context.report({
+            node: null,
+            messageId: 'noGlobalLimit',
+          });
+        }
         if (!hasDistributedStorage) {
-
           context.report({
             node: null,
             messageId: 'unsafeStorage',
           });
-
         }
 
         if (!hasFallbackMechanism) {

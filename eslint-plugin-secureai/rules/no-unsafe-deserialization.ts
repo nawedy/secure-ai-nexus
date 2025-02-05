@@ -21,15 +21,13 @@ const UNSAFE_PATTERNS = {
     'eval': 'ast.literal_eval',
     'exec': 'subprocess.run with restrictions',
   },
-  securityChecks: ['isinstance',
+  securityChecks: [
+    'isinstance',
     'type',
     'hasattr',
     'issubclass',
   ],
 } as const;
-const { deserializationFuncs, safeAlternatives, securityChecks } = UNSAFE_PATTERNS;
-
-};
 
 const rule: Rule.RuleModule = {
   meta: {
@@ -53,43 +51,43 @@ const rule: Rule.RuleModule = {
     const checkDeserializationCall = (node: CallExpression) => {
       const calleeText = context.getSourceCode().getText(node.callee);
 
-      const safeAlternatives = UNSAFE_PATTERNS.safeAlternatives as Record<string, string>;
-
       // Check for unsafe deserialization functions
       for (const func of UNSAFE_PATTERNS.deserializationFuncs) {
         if (calleeText.includes(func)) {
-          const alternative = safeAlternatives[func] || 'a safe alternative';
+          const alternative = UNSAFE_PATTERNS.safeAlternatives[func] || 'a safe alternative';
           context.report({
             node,
             messageId: 'unsafeDeserialization',
-                data: {
-                  func,
-                  alternative: alternative
-                },
-              });
-            }
-        }
-
-
-        // Check for type checking before deserialization
-        let hasTypeCheck = false;
-        context.getAncestors().forEach(ancestor => {
-          if (ancestor.type === 'IfStatement') {
-            const testText = context.getSourceCode().getText((ancestor as IfStatement).test);
-            UNSAFE_PATTERNS.securityChecks.forEach(check => {
-              if (testText.includes(check)) {
-                hasTypeCheck = true;
-              }
-            });
-        }
-        });
-
-        if (!hasTypeCheck && calleeText.includes('loads')) {
-          context.report({
-            node,
-            messageId: 'missingTypeCheck',
+            data: {
+              func,
+              alternative
+            },
           });
         }
+      }
+
+      // Check for type checking before deserialization
+      let hasTypeCheck = false;
+      const ancestors = context.getAncestors();
+
+      for (const ancestor of ancestors) {
+        if (ancestor.type === 'IfStatement') {
+          const testText = context.getSourceCode().getText((ancestor as IfStatement).test);
+          for (const check of UNSAFE_PATTERNS.securityChecks) {
+            if (testText.includes(check)) {
+              hasTypeCheck = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!hasTypeCheck && calleeText.includes('loads')) {
+        context.report({
+          node,
+          messageId: 'missingTypeCheck',
+        });
+      }
     };
 
     const checkCustomDecoder = (node: Node) => {
@@ -99,16 +97,16 @@ const rule: Rule.RuleModule = {
       ) {
         const memberExpression = node.callee as MemberExpression;
         if (memberExpression.property.type === 'Identifier' && memberExpression.property.name === 'loads') {
-
           const callExpression = node as CallExpression;
           const hasCustomDecoder = callExpression.arguments.length > 1 &&
             callExpression.arguments[1].type === 'Identifier';
 
           if (!hasCustomDecoder) {
-          context.report({
-            node,
-            messageId: 'useCustomDecoder'
-          });
+            context.report({
+              node,
+              messageId: 'useCustomDecoder'
+            });
+          }
         }
       }
     };
@@ -126,7 +124,7 @@ const rule: Rule.RuleModule = {
           node.right.callee.type === 'Identifier'
         ) {
           const funcName = (node.right.callee as Identifier).name;
-          if (funcName.toLowerCase().includes('load') || funcName.toLowerCase().includes('parse')){
+          if (funcName.toLowerCase().includes('load') || funcName.toLowerCase().includes('parse')) {
             context.report({
               node,
               messageId: 'untrustedInput',
@@ -138,7 +136,7 @@ const rule: Rule.RuleModule = {
       // Check imports for unsafe modules
       ImportDeclaration(node: ImportDeclaration) {
         const importSource = context.getSourceCode().getText(node.source);
-        if (importSource.includes('pickle') || importSource.includes('marshal')){
+        if (importSource.includes('pickle') || importSource.includes('marshal')) {
           context.report({
             node,
             messageId: 'requireWhitelist',

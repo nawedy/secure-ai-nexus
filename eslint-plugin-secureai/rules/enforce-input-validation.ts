@@ -1,5 +1,5 @@
 import { Rule } from 'eslint';
-import { Node, CallExpression, ObjectExpression, Property } from 'estree';
+import { Node, CallExpression, ObjectExpression, Property, FunctionDeclaration } from 'estree';
 
 const VALIDATION_PATTERNS = {
   pythonValidators: [
@@ -118,13 +118,12 @@ const rule: Rule.RuleModule = {
       });
     };
 
-     const checkRequestHandler = (node: Node) => {
+    const checkRequestHandler = (node: FunctionDeclaration) => {
       let hasPydanticModel = false;
       let hasValidation = false;
-      
+
       // Look for Pydantic model usage
-     
-        context.getAncestors().forEach(ancestor => {
+      context.getAncestors().forEach(ancestor => {
         if (
           ancestor.type === 'ClassDeclaration' &&
           ancestor.superClass &&
@@ -161,12 +160,13 @@ const rule: Rule.RuleModule = {
     return {
       // Check function parameters
       FunctionDeclaration(node) {
+        // Check individual parameters for validation
         node.params.forEach(param => {
           checkValidationPresence(param, context.getSourceCode().getText(param));
         });
-      },
 
-       FunctionDeclaration(node) { if (
+        // Check request handler functions
+        if (
           node.id &&
           (
             node.id.name.toLowerCase().includes('handler') ||
@@ -177,7 +177,6 @@ const rule: Rule.RuleModule = {
           checkRequestHandler(node);
         }
       },
-
 
       // Check string literals for dangerous patterns
       Literal(node) {

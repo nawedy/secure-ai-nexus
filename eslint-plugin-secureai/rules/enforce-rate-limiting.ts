@@ -79,9 +79,11 @@ const rule: Rule.RuleModule = {
             // Check rate limit values
             if (prop.key.name === 'maxRequests' && prop.value.type === 'Literal') {
               if (typeof prop.value.value === 'number') {
-                const maxRequests = prop.value.value;
-                if (maxRequests > RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests) {
-                  context.report({
+                const maxRequests: number = prop.value.value;
+                 if (maxRequests > RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests) {
+                   context.report({
+
+
                     node: prop,
                     messageId: 'insufficientLimit',
                     data: {
@@ -90,15 +92,18 @@ const rule: Rule.RuleModule = {
                     },
                   });
                 }
+               }
+             } else if (typeof prop.value.value === 'string') {
+               context.report({
+                 node: prop,
+                 messageId: 'insecureWindow',
+                 data: {
+                   window: prop.value.value,
+                   recommended: RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests,
+                 },
+               });
               }
-            }else if (typeof prop.value.value === 'string') {
-                    recommended: RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests,
-                  },
-                });
-              }
-            }
-
-            // Check window size
+             // Check window size
            if (prop.key.name === 'window' && prop.value.type === 'Literal') {
                if(typeof prop.value.value === 'number'){
                 const window = prop.value.value;
@@ -109,10 +114,13 @@ const rule: Rule.RuleModule = {
                     data: { window },
                   });
                 }
-              } else if (typeof prop.value.value === 'string') {
-
-                });
-              }
+               }
+              else if (typeof prop.value.value === 'string') {
+                 context.report({
+                   node: prop,
+                   messageId: 'insecureWindow',
+                   data: { window: prop.value.value },
+                 });
             }
           }
         });
@@ -124,11 +132,13 @@ const rule: Rule.RuleModule = {
       let hasRateLimit = false;
 
       decorators.forEach(decorator => {
-        if (decorator.value.includes('@rate_limit') ||
+        if (
+          decorator.value.includes('@rate_limit') ||
             decorator.value.includes('@ratelimit') ||
-            decorator.value.includes('@limiter')) {
+          decorator.value.includes('@limiter')
+        ) {
           hasRateLimit = true;
-        }
+        } 
       });
 
       if (!hasRateLimit) {
@@ -141,10 +151,12 @@ const rule: Rule.RuleModule = {
         });
       }
     };
-
+  
     const checkStorageBackend = (node: ImportDeclaration) => {
       const importSource = context.getSourceCode().getText(node.source);
-      if (importSource.includes('redis') || importSource.includes('memcached')) {
+      if (
+        importSource.includes('redis') || importSource.includes('memcached')
+      ) {
         hasDistributedStorage = true;
       }
     };
@@ -153,11 +165,14 @@ const rule: Rule.RuleModule = {
       // Check rate limit imports and configuration
       ImportDeclaration(node) {
         const importSource = context.getSourceCode().getText(node.source);
-        RATE_LIMIT_PATTERNS.pythonLibraries.recommended.forEach(lib => {
+        RATE_LIMIT_PATTERNS.pythonLibraries.recommended.forEach((lib) => {
           if (importSource.includes(lib)) {
             hasGlobalRateLimit = true;
           }
         });
+       
+
+
         checkStorageBackend(node);
       },
 
@@ -179,27 +194,34 @@ const rule: Rule.RuleModule = {
 
       // Check for fallback mechanisms
       TryStatement(node) {
-        if (context.getSourceCode().getText(node).includes('rate_limit')) {
+       if (context.getSourceCode().getText(node).includes('rate_limit')) {
           hasFallbackMechanism = true;
-        }
+       }
       },
 
       // Program exit
       'Program:exit'() {
         if (!hasGlobalRateLimit) {
-              context.report({
-            node: null,
-            messageId: 'noGlobalLimit',
-          });
-        }
+           context.report({
+             node: null,
+             messageId: 'noGlobalLimit',
+           });
+         }
+          if (!hasDistributedStorage) {
 
-        if (!hasDistributedStorage) {
-          context.report({
-            node: null,
-            messageId: 'unsafeStorage',
-          });
-        }
+           context.report({
+             node: null,
+             messageId: 'unsafeStorage',
+           });
 
+         }
+        
+
+
+
+
+
+     
         if (!hasFallbackMechanism) {
           context.report({
             node: null,

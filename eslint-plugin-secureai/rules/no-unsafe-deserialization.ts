@@ -1,5 +1,5 @@
 import { Rule } from 'eslint';
-import { Node, CallExpression, Identifier } from 'estree';
+import { Node, CallExpression, Identifier, IfStatement } from 'estree';
 
 const UNSAFE_PATTERNS = {
   deserializationFuncs: [
@@ -12,12 +12,6 @@ const UNSAFE_PATTERNS = {
     'eval',
     'exec',
   ] as const,
-
-
-  
-} as const;
-
-const UNSAFE_PATTERNS = {
   safeAlternatives: {
     'pickle.loads': 'dill.loads with whitelist',
     'yaml.load': 'yaml.safe_load',
@@ -27,12 +21,14 @@ const UNSAFE_PATTERNS = {
     'eval': 'ast.literal_eval',
     'exec': 'subprocess.run with restrictions',
   },
-  securityChecks: [
-     'isinstance',
+  securityChecks: ['isinstance',
     'type',
     'hasattr',
     'issubclass',
   ],
+} as const;
+
+
 };
 
 const rule: Rule.RuleModule = {
@@ -57,59 +53,64 @@ const rule: Rule.RuleModule = {
     const checkDeserializationCall = (node: CallExpression) => {
       const calleeText = context.getSourceCode().getText(node.callee);
 
-
       const safeAlternatives = UNSAFE_PATTERNS.safeAlternatives as Record<string, string>;
 
       // Check for unsafe deserialization functions
-      for (const func of UNSAFE_PATTERNS.deserializationFuncs) {
-          if (calleeText.includes(func)) {
-            const alternative = safeAlternatives[func] || 'a safe alternative';
-           context.report({
-             node,
-             messageId: 'unsafeDeserialization',
-             data: {
-               func,
-               alternative:alternative
-            },
-          });
-        }
-      });
-
-      // Check for type checking before deserialization
-      let hasTypeCheck = false;
-      context.getAncestors().forEach(ancestor => {
-        if (ancestor.type === 'IfStatement') {
-          const testText = context.getSourceCode().getText(ancestor.test);
-          UNSAFE_PATTERNS.securityChecks.forEach(check => {
-            if (testText.includes(check)) {
-              hasTypeCheck = true;
+        for (const func of UNSAFE_PATTERNS.deserializationFuncs) {
+          if (calleeText.includes(func)){
+              const alternative = safeAlternatives[func] || 'a safe alternative';
+              context.report({
+                node,
+                messageId: 'unsafeDeserialization',
+                data: {
+                  func,
+                  alternative: alternative
+                },
+              });
             }
+        }
+
+
+        // Check for type checking before deserialization
+        let hasTypeCheck = false;
+        context.getAncestors().forEach(ancestor => {
+        if (ancestor.type === 'IfStatement') {
+        const testText = context.getSourceCode().getText((ancestor as IfStatement).test);
+        UNSAFE_PATTERNS.securityChecks.forEach(check => {
+        if (testText.includes(check)) {
+          hasTypeCheck = true;
+         }
           });
         }
-      });
-
-      if (!hasTypeCheck && calleeText.includes('loads')) {
-        context.report({
-          node,
-          messageId: 'missingTypeCheck',
         });
-      }
+
+        if (!hasTypeCheck && calleeText.includes('loads')) {
+          context.report({
+            node,
+            messageId: 'missingTypeCheck',
+          });
+        }
     };
 
     const checkCustomDecoder = (node: Node) => {
-      if (
+     if (
+        node.type === 'CallExpression' &&
+        node.callee.type === 'MemberExpression' &&
+        node.callee.property.type === 'Identifier' &&
+        node.callee.property.name === 'loads'
+      ){
         node.type === 'CallExpression' &&
         node.callee.type === 'MemberExpression' &&
         node.callee.property.type === 'Identifier' &&
         node.callee.property.name === 'loads'
       ) {
-        const hasCustomDecoder = node.arguments.length > 1 &&
-          node.arguments[1].type === 'Identifier';
+        const hasCustomDecoder = Node.arguments.length > 1 &&
+          Node.arguments[1].type === 'Identifier';
 
-        if (!hasCustomDecoder) {
+         if (!hasCustomDecoder) {
           context.report({
             node,
-            messageId: 'useCustomDecoder',
+            messageId: 'useCustomDecoder'
           });
         }
       }
@@ -128,7 +129,7 @@ const rule: Rule.RuleModule = {
           node.right.callee.type === 'Identifier'
         ) {
           const funcName = node.right.callee.name;
-          if (funcName.toLowerCase().includes('load') || funcName.toLowerCase().includes('parse')) {
+          if (funcName.toLowerCase().includes('load') || funcName.toLowerCase().includes('parse')){
             context.report({
               node,
               messageId: 'untrustedInput',
@@ -140,7 +141,7 @@ const rule: Rule.RuleModule = {
       // Check imports for unsafe modules
       ImportDeclaration(node) {
         const importSource = context.getSourceCode().getText(node.source);
-        if (importSource.includes('pickle') || importSource.includes('marshal')) {
+        if (importSource.includes('pickle') || importSource.includes('marshal')){
           context.report({
             node,
             messageId: 'requireWhitelist',

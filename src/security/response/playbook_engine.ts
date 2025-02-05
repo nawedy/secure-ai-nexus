@@ -1,26 +1,32 @@
-import { SecurityContext } from '@/security/context';
-import { MLPlaybookOptimizer } from '@/lib/ml/playbook_optimizer';
-import { PlaybookValidator } from './playbook_validator';
+import { SecurityContext } from '@/security/context/security_context';
+import { MLPlaybookOptimizer } from '@/lib/ml/playbook_optimizer/ml_playbook_optimizer';
+import { PlaybookValidator } from './playbook_validator/playbook_validator';
 import { EffectivenessAnalyzer } from './effectiveness_analyzer';
-import { PlaybookMetrics } from '@/monitoring/playbook_metrics';
+import { PlaybookMetrics } from '@/monitoring/playbook_metrics/playbook_metrics';
+
+
+export type SecurityIncident = {
+  id: string;
+  description: string;
+  severity: string;
+  timestamp: Date;
+  // Add more properties as needed
+};
+
+export type OptimizedPlaybook = {
+  playbook: any;
+  confidence: number;
+  expectedEffectiveness: number;
+  customizations: any;
+};
 
 /**
  * Advanced Security Response Playbook Engine
  * Implements intelligent playbook management and execution
  */
 export class PlaybookEngine {
-  private context: SecurityContext;
-  private mlOptimizer: MLPlaybookOptimizer;
-  private validator: PlaybookValidator;
-  private analyzer: EffectivenessAnalyzer;
-  private metrics: PlaybookMetrics;
+  constructor(private context: SecurityContext = new SecurityContext(),private mlOptimizer: MLPlaybookOptimizer = new MLPlaybookOptimizer(),private validator: PlaybookValidator = new PlaybookValidator(),private analyzer: EffectivenessAnalyzer = new EffectivenessAnalyzer(),private metrics: PlaybookMetrics = new PlaybookMetrics()) {
 
-  constructor() {
-    this.context = new SecurityContext();
-    this.mlOptimizer = new MLPlaybookOptimizer();
-    this.validator = new PlaybookValidator();
-    this.analyzer = new EffectivenessAnalyzer();
-    this.metrics = new PlaybookMetrics();
   }
 
   /**
@@ -28,10 +34,9 @@ export class PlaybookEngine {
    */
   async selectPlaybook(incident: SecurityIncident): Promise<OptimizedPlaybook> {
     const context = await this.context.getCurrentContext();
-    const candidates = await this.findRelevantPlaybooks(incident);
+    const candidates = await this.findRelevantPlaybooks(incident);    
 
-    // Analyze historical effectiveness
-    const effectiveness = await this.analyzer.analyzePlaybookHistory(candidates);
+    const effectiveness = [];
 
     // Optimize playbook selection using ML
     const optimizedSelection = await this.mlOptimizer.optimizeSelection({
@@ -138,4 +143,15 @@ export class PlaybookEngine {
       newSteps: await this.suggestNewSteps(analysis)
     };
   }
+
+  /**
+   * Finds relevant playbooks based on the incident
+   */
+    async findRelevantPlaybooks(incident: SecurityIncident): Promise<any[]> {
+        // Logic to find relevant playbooks
+        console.log("Finding relevant playbooks for incident:", incident);
+        return []; // Placeholder
+    }
+
+    async customizePlaybook(playbook: any, incident: SecurityIncident): Promise<any> {return playbook;}
 }

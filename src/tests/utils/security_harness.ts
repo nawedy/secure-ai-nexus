@@ -22,8 +22,7 @@ export class SecurityTestHarness {
     mockExternalServices: boolean;
     enableMetrics: boolean;
   }): Promise<void> {
-    // implementation
-    return;
+    return null;
   }
 
   static async initialize(options: {
@@ -61,6 +60,7 @@ export class SecurityTestHarness {
 
   async getSecurityAlerts(): Promise<any[]> {
     // Implementation
+    return []
   }
 
   async getComplianceStatus(): Promise<{
@@ -72,6 +72,6 @@ export class SecurityTestHarness {
 
   async cleanup(): Promise<void> {
     // Implementation
-    return;
+    return null;
   }
 }

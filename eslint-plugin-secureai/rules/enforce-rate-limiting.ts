@@ -80,10 +80,8 @@ const rule: Rule.RuleModule = {
             if (prop.key.name === 'maxRequests' && prop.value.type === 'Literal') {
               if (typeof prop.value.value === 'number') {
                 const maxRequests: number = prop.value.value;
-                 if (maxRequests > RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests) {
-                   context.report({
-
-
+                if (maxRequests > RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests) {
+                  context.report({
                     node: prop,
                     messageId: 'insufficientLimit',
                     data: {
@@ -92,35 +90,38 @@ const rule: Rule.RuleModule = {
                     },
                   });
                 }
-               }
-             } else if (typeof prop.value.value === 'string') {
-               context.report({
-                 node: prop,
-                 messageId: 'insecureWindow',
-                 data: {
-                   window: prop.value.value,
-                   recommended: RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests,
-                 },
-               });
               }
-             // Check window size
-           if (prop.key.name === 'window' && prop.value.type === 'Literal') {
-               if(typeof prop.value.value === 'number'){
+            } else if (typeof prop.value.value === 'string') {
+              context.report({
+                node: prop,
+                messageId: 'insecureWindow',
+                data: {
+                  window: prop.value.value,
+                  recommended: RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests,
+                },
+              });
+            }
+            // Check window size
+            if (prop.key.name === 'window' && prop.value.type === 'Literal') {
+              if (typeof prop.value.value === 'number') {
                 const window = prop.value.value;
                 if (window > 3600) {
                   context.report({
                     node: prop,
                     messageId: 'insecureWindow',
-                    data: { window },
+                    data: { window: window },
                   });
                 }
-               }
-              else if (typeof prop.value.value === 'string') {
-                 context.report({
-                   node: prop,
-                   messageId: 'insecureWindow',
-                   data: { window: prop.value.value },
-                 });
+              } else if (typeof prop.value.value === 'string') {
+                context.report({
+                  node: prop,
+                  messageId: 'insecureWindow',
+                  data: { window: prop.value.value },
+                });
+              }
+
+            }
+
             }
           }
         });
@@ -134,14 +135,14 @@ const rule: Rule.RuleModule = {
       decorators.forEach(decorator => {
         if (
           decorator.value.includes('@rate_limit') ||
-            decorator.value.includes('@ratelimit') ||
+          decorator.value.includes('@ratelimit') ||
           decorator.value.includes('@limiter')
         ) {
           hasRateLimit = true;
-        } 
+        }
       });
 
-      if (!hasRateLimit) {
+        if (!hasRateLimit) {
         context.report({
           node,
           messageId: 'missingRateLimit',
@@ -151,13 +152,13 @@ const rule: Rule.RuleModule = {
         });
       }
     };
-  
+
     const checkStorageBackend = (node: ImportDeclaration) => {
       const importSource = context.getSourceCode().getText(node.source);
       if (
         importSource.includes('redis') || importSource.includes('memcached')
       ) {
-        hasDistributedStorage = true;
+            hasDistributedStorage = true;
       }
     };
 
@@ -170,13 +171,11 @@ const rule: Rule.RuleModule = {
             hasGlobalRateLimit = true;
           }
         });
-       
-
-
         checkStorageBackend(node);
       },
 
       // Check endpoint decorators
+
       FunctionDeclaration(node) {
         if (node.id && (
           node.id.name.toLowerCase().includes('handler') ||
@@ -184,6 +183,7 @@ const rule: Rule.RuleModule = {
           node.id.name.toLowerCase().includes('route')
         )) {
           checkEndpointSecurity(node);
+
         }
       },
 
@@ -193,10 +193,11 @@ const rule: Rule.RuleModule = {
       },
 
       // Check for fallback mechanisms
+
       TryStatement(node) {
-       if (context.getSourceCode().getText(node).includes('rate_limit')) {
+        if (context.getSourceCode().getText(node).includes('rate_limit')) {
           hasFallbackMechanism = true;
-       }
+        }
       },
 
       // Program exit
@@ -207,26 +208,19 @@ const rule: Rule.RuleModule = {
              messageId: 'noGlobalLimit',
            });
          }
-          if (!hasDistributedStorage) {
+        if (!hasDistributedStorage) {
 
-           context.report({
-             node: null,
-             messageId: 'unsafeStorage',
-           });
+          context.report({
+            node: null,
+            messageId: 'unsafeStorage',
+          });
 
-         }
-        
+        }
 
-
-
-
-
-     
         if (!hasFallbackMechanism) {
           context.report({
             node: null,
             messageId: 'missingFallback',
-
           });
         }
       },

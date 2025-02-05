@@ -1,5 +1,5 @@
 import { Rule } from 'eslint';
-import { Node, CallExpression, Identifier, IfStatement } from 'estree';
+import { Node, CallExpression, Identifier, IfStatement, MemberExpression, AssignmentExpression, ImportDeclaration } from 'estree';
 
 const UNSAFE_PATTERNS = {
   deserializationFuncs: [
@@ -27,7 +27,7 @@ const UNSAFE_PATTERNS = {
     'issubclass',
   ],
 } as const;
-
+const { deserializationFuncs, safeAlternatives, securityChecks } = UNSAFE_PATTERNS;
 
 };
 
@@ -56,12 +56,12 @@ const rule: Rule.RuleModule = {
       const safeAlternatives = UNSAFE_PATTERNS.safeAlternatives as Record<string, string>;
 
       // Check for unsafe deserialization functions
-        for (const func of UNSAFE_PATTERNS.deserializationFuncs) {
-          if (calleeText.includes(func)){
-              const alternative = safeAlternatives[func] || 'a safe alternative';
-              context.report({
-                node,
-                messageId: 'unsafeDeserialization',
+      for (const func of UNSAFE_PATTERNS.deserializationFuncs) {
+        if (calleeText.includes(func)) {
+          const alternative = safeAlternatives[func] || 'a safe alternative';
+          context.report({
+            node,
+            messageId: 'unsafeDeserialization',
                 data: {
                   func,
                   alternative: alternative
@@ -74,13 +74,13 @@ const rule: Rule.RuleModule = {
         // Check for type checking before deserialization
         let hasTypeCheck = false;
         context.getAncestors().forEach(ancestor => {
-        if (ancestor.type === 'IfStatement') {
-        const testText = context.getSourceCode().getText((ancestor as IfStatement).test);
-        UNSAFE_PATTERNS.securityChecks.forEach(check => {
-        if (testText.includes(check)) {
-          hasTypeCheck = true;
-         }
-          });
+          if (ancestor.type === 'IfStatement') {
+            const testText = context.getSourceCode().getText((ancestor as IfStatement).test);
+            UNSAFE_PATTERNS.securityChecks.forEach(check => {
+              if (testText.includes(check)) {
+                hasTypeCheck = true;
+              }
+            });
         }
         });
 
@@ -93,21 +93,18 @@ const rule: Rule.RuleModule = {
     };
 
     const checkCustomDecoder = (node: Node) => {
-     if (
+      if (
         node.type === 'CallExpression' &&
-        node.callee.type === 'MemberExpression' &&
-        node.callee.property.type === 'Identifier' &&
-        node.callee.property.name === 'loads'
-      ){
-        node.type === 'CallExpression' &&
-        node.callee.type === 'MemberExpression' &&
-        node.callee.property.type === 'Identifier' &&
-        node.callee.property.name === 'loads'
+        node.callee.type === 'MemberExpression'
       ) {
-        const hasCustomDecoder = Node.arguments.length > 1 &&
-          Node.arguments[1].type === 'Identifier';
+        const memberExpression = node.callee as MemberExpression;
+        if (memberExpression.property.type === 'Identifier' && memberExpression.property.name === 'loads') {
 
-         if (!hasCustomDecoder) {
+          const callExpression = node as CallExpression;
+          const hasCustomDecoder = callExpression.arguments.length > 1 &&
+            callExpression.arguments[1].type === 'Identifier';
+
+          if (!hasCustomDecoder) {
           context.report({
             node,
             messageId: 'useCustomDecoder'
@@ -123,12 +120,12 @@ const rule: Rule.RuleModule = {
       },
 
       // Check variable assignments for potential deserialization
-      AssignmentExpression(node) {
+      AssignmentExpression(node: AssignmentExpression) {
         if (
           node.right.type === 'CallExpression' &&
           node.right.callee.type === 'Identifier'
         ) {
-          const funcName = node.right.callee.name;
+          const funcName = (node.right.callee as Identifier).name;
           if (funcName.toLowerCase().includes('load') || funcName.toLowerCase().includes('parse')){
             context.report({
               node,
@@ -139,7 +136,7 @@ const rule: Rule.RuleModule = {
       },
 
       // Check imports for unsafe modules
-      ImportDeclaration(node) {
+      ImportDeclaration(node: ImportDeclaration) {
         const importSource = context.getSourceCode().getText(node.source);
         if (importSource.includes('pickle') || importSource.includes('marshal')){
           context.report({

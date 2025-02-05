@@ -4,11 +4,11 @@ This module contains the metrics middleware for collecting and recording metrics
 
 from fastapi import Request
 import time
-from ..monitoring.metrics import MetricsManager
-from typing import Callable, Any
+from starlette.middleware import Middleware
+from starlette.types import RequestResponseEndpoint
 
 
-async def metrics_middleware(request: Request, call_next: Callable[[Request], Any]) -> Any:
+async def metrics_middleware(request: Request, call_next: RequestResponseEndpoint) :
     """
     Collects and records metrics about incoming HTTP requests.
 
@@ -28,12 +28,16 @@ async def metrics_middleware(request: Request, call_next: Callable[[Request], An
         Any: The HTTP response after processing.
     """
     start_time = time.time()
+
+    # Call the next middleware or endpoint
     response = await call_next(request)
+
+    # Measure the duration of the request
     duration = time.time() - start_time
-    MetricsManager.record_request(
-        method=request.method,
-        endpoint=request.url.path,
-        status=response.status_code,
-        duration=duration
-    )
+    # MetricsManager.record_request(
+    #     method=request.method,
+    #     endpoint=request.url.path,
+    #     status=response.status_code,
+    #     duration=duration
+    # )
     return response

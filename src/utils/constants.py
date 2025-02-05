@@ -1,0 +1,8 @@
+INCORRECT_EMAIL_OR_PASSWORD = "Incorrect email or password"
+USER_NOT_FOUND = "User not found"
+PASSWORD_MUST_CONTAIN_DIGIT = "Password must contain at least one digit"
+PASSWORD_MUST_CONTAIN_LETTER = "Password must contain at least one letter"
+PASSWORD_RESET_EMAIL_SENT = "Password reset email sent"
+PASSWORD_RESET = "Password reset"
+INVALID_CONTACT_NAME = "Invalid contact name"
+INVALID_CONTACT_MESSAGE = "Invalid contact message"

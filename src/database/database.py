@@ -35,14 +35,9 @@ def get_db() -> Session:
     This function is a dependency for FastAPI endpoints. It creates a new database session for each request,
     yields it to be used in the endpoint, and closes the session after the request is processed.
 
-    The function ensures that the database connection is valid before yielding the session.
-
-    Yields:
-        Session: The database session object.
     """
-    db: Session = SessionLocal()
+    db = SessionLocal()
     try:
-        # Check if the database is connected before yielding the session.
         db.execute(text("SELECT 1"))
         yield db
     except Exception as e:

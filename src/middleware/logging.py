@@ -1,13 +1,14 @@
 from fastapi import Request, Response
+from starlette.types import ASGIApp, Receive, Scope, Send, RequestResponseEndpoint
 import logging
 import time
-from typing import Callable, Any
+from typing import Any
 import uuid
 
 logger = logging.getLogger(__name__)
 
 
-async def logging_middleware(request: Request, call_next: Callable) -> Any:
+async def logging_middleware(request: Request, call_next: RequestResponseEndpoint) -> Any:
     """Middleware to log all incoming requests and their corresponding responses.
 
     Args:
@@ -17,8 +18,7 @@ async def logging_middleware(request: Request, call_next: Callable) -> Any:
     Returns:
         Any: The response from the next middleware or the endpoint.
 
-    Raises:
-        Exception: If any error occurs during the request processing, it is raised after logging the error.
+    Raises: Exception: If any error occurs during the request processing, it is raised after logging the error.
 
     Example:
         
@@ -26,7 +26,7 @@ async def logging_middleware(request: Request, call_next: Callable) -> Any:
     request_id = str(uuid.uuid4())
     start_time = time.time()
 
-    # Log request
+    # Log incoming request information
     logger.info(
         "Incoming request",
         extra={
@@ -43,7 +43,7 @@ async def logging_middleware(request: Request, call_next: Callable) -> Any:
     try:
         response = await call_next(request)
         duration = time.time() - start_time
-
+        
         # Log response
         logger.info(
             "Request completed",

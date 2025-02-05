@@ -1,54 +1,44 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy, beforeUpdate } from 'svelte';
+  import { authStore, type AuthStore } from '../../contexts/AuthContext';
+  import { get } from 'svelte/store';
   let error = '';
 
-  onMount(async () => {
-    // Check if the user is authenticated
-    const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+  let unsubscribe: any;
 
-    if (!token) {
-      goto('/login');
-      return;
-    }
-
-    try{
-        const response = await fetch('/api/monitoring', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        }
-        });
-
-        if (response.ok) {
-        const data = await response.json();
-        // Handle the data 
-        } else {
+  onMount(() => {
+    unsubscribe = authStore.subscribe((store) => {
+      if (!store.user) {
         goto('/login');
-        }
-
-    } catch(err){
-        goto('/login');
-    }
-
-
+      }
+    });
   });
 
-
-function logout() {
-  document.cookie = `token=; path=/; max-age=0`;
-  goto('/login')
-}
+  async function logout() {
+    const store = get(authStore);
+    
+    if (store) {
+      await store.logout();
+      goto('/login');
+    } else {
+      console.error('AuthStore is not initialized.');
+    }
+  }
 </script>
 
 <div class="container">
   <h1>Dashboard</h1>
   {#if error}<div class="error">{error}</div>{/if}
   <p>Welcome to the dashboard!</p>
-  <button on:click={logout}>Logout</button>
+  <button on:click={logout} class="logout">Logout</button>
 </div>
 
 <style>
-
+  .logout {
+    background-color: #f44336;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+  }
 </style>

@@ -37,5 +37,6 @@
   "IDX.aI.enableInlineCompletion": true,
   "IDX.aI.enableCodebaseIndexing": true,
   "IDX.aI.modelProvider": "builtin",
-  "IDX.aI.geminiApiKey": "AIzaSyDLivhAIfMl1n3yj74vitluYF_ETEKeCUQ"
+  "IDX.aI.geminiApiKey": "AIzaSyDLivhAIfMl1n3yj74vitluYF_ETEKeCUQ",
+  "terminal.integrated.sendKeybindingsToShell": true
 }

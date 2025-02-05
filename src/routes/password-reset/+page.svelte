@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   let email = '';
   let error = '';
@@ -14,15 +13,17 @@
     // Simple form validation
     if (!email) {
         emailError = 'Email is required';
-    } else if (!/^[w-.]+@([w-]+.)+[w-]{2,4}$/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         emailError = 'Invalid email format';
     }
-    if(emailError){
-      loading = false;
-      return
-    }
+    
+        if (emailError) {
+            loading = false;
+            return; // Stop execution if there are errors
+        }
 
     try {
+      
       const response = await fetch('/api/auth/password-reset', {
         method: 'POST',
         headers: {
@@ -32,13 +33,11 @@
       });
 
       if (response.ok) {
-        
+        alert("Password reset link sent")
       } else {
         const data = await response.json();
         error = data.detail || 'password reset failed';
-        if(Array.isArray(data.detail)){
-            error = data.detail[0].msg;
-        }
+        
       }
     } catch (err) {
       error = 'An error occurred';

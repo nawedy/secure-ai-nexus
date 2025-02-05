@@ -1,10 +1,12 @@
 import logging
 import os
+import time
 from typing import Any, Dict
-from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import Counter, Histogram, Gauge, start_http_server
+from prometheus_client import multiprocess
 
 logger = logging.getLogger(__name__)
-
+ 
 # Request metrics
 REQUEST_COUNT = Counter(
     'http_requests_total',
@@ -61,6 +63,16 @@ class MetricsManager:
     """
     Manages the recording of metrics.
     """
+    def start_prometheus_server(self, port: int = 8000) -> None:
+        """Starts the Prometheus metrics server."""
+        logger.info(f"Starting Prometheus metrics server on port {port}")
+        
+        try:
+            start_http_server(port)
+        except Exception as e:
+            logger.error(f"Error starting Prometheus server: {e}")
+            
+    
     def __init__(self):
         """
         Records HTTP request metrics.
@@ -71,9 +83,10 @@ class MetricsManager:
             status (int): HTTP status code.
             duration (float): Request duration in seconds.
         """
+    def record_request(self, method: str, endpoint: str, status: int, duration: float) -> None:
+        REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=status).inc()
+        REQUEST_LATENCY.labels(method=method, endpoint=endpoint).observe(duration)
         logger.info(f"Recording request: method={method}, endpoint={endpoint}, status={status}, duration={duration}")
-        pass
-
     def record_model_request(self, model_name: str, status: str, duration: float) -> None:
         """
         Records model inference request metrics.
@@ -83,7 +96,8 @@ class MetricsManager:
             status (str): Status of the request (e.g., success, failure).
             duration (float): Request duration in seconds.
         """
-        logger.info(f"Recording model request: model_name={model_name}, status={status}, duration={duration}")
+        MODEL_REQUEST_COUNT.labels(model_name=model_name, status=status).inc()
+        MODEL_LATENCY.labels(model_name=model_name).observe(duration)
         pass
 
     def update_memory_usage(self, bytes_used: int) -> None:
@@ -93,6 +107,7 @@ class MetricsManager:
         Args:
             bytes_used (int): Memory usage in bytes.
         """
+        MEMORY_USAGE.set(bytes_used)
         logger.info(f"Updating memory usage: bytes_used={bytes_used}")
         pass
 
@@ -103,6 +118,7 @@ class MetricsManager:
             device (str): Name of the GPU device.
             bytes_used (int): GPU memory usage in bytes.
         """
+        GPU_MEMORY_USAGE.labels(device=device).set(bytes_used)
         logger.info(f"Updating GPU memory: device={device}, bytes_used={bytes_used}")
         pass
 
@@ -115,7 +131,8 @@ class MetricsManager:
                     severity (str): Severity of the security event.
                     details (Dict): Additional details about the event.
                 """
-                logger.info(f"Recording security event: event_type={event_type}, severity={severity}, details={details}")
+                SECURITY_EVENTS.labels(event_type=event_type, severity=severity).inc()
+                logger.info(f"Recording security event: event_type={event_type}, severity={severity}")
                 pass
 
     def record_auth_failure(self, auth_type: str) -> None:
@@ -125,6 +142,7 @@ class MetricsManager:
                 Args:
                     auth_type (str): Type of authentication that failed.
                 """
+                FAILED_AUTH_ATTEMPTS.labels(auth_type=auth_type).inc()
                 logger.info(f"Recording auth failure: auth_type={auth_type}")
                 pass
                 

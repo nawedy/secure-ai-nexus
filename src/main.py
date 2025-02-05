@@ -1,17 +1,11 @@
 """Main application entry point."""
 
-from typing import Any
-
-from fastapi import FastAPI, Request, Form, HTTPException, Depends, Response
+from fastapi import FastAPI, Request, Form, HTTPException, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.base import BaseHTTPMiddleware
-
-import smtplib
-from email.mime.text import MIMEText
-
+from pydantic import EmailStr
 from src.config.settings import settings
 from src.api.router import api_router
 from src.middleware.logging import LoggingMiddleware
@@ -22,6 +16,8 @@ from src.middleware.validation import InputValidationMiddleware
 from src.middleware.security import SecurityHeadersMiddleware
 from src.database.database import Base, engine
 import logging
+from src.utils.email import send_contact_email
+from src.utils.validation import validate_contact
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +34,7 @@ def get_application() -> FastAPI:
             allow_origins=[str(origin) for origin in settings.ALLOWED_HOSTS],
             allow_credentials=True,
             allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            allow_headers=["*"]
+            allow_headers=["*"],
         ),
         Middleware(ErrorHandlerMiddleware),
         Middleware(MetricsMiddleware),
@@ -57,11 +53,13 @@ def get_application() -> FastAPI:
     application.include_router(api_router, prefix=settings.API_PREFIX)
     return application
 
+
 app = get_application()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 Base.metadata.create_all(bind=engine)
+
 
 @app.get("/health", tags=["Health Check"])
 async def health_check():
@@ -70,6 +68,7 @@ async def health_check():
     """
     return JSONResponse(content={"status": "OK"}, status_code=200)
 
+
 @app.get("/", tags=["Home"])
 async def home():
     """Endpoint for the home page.
@@ -77,42 +76,30 @@ async def home():
     """
     return JSONResponse(content={"status": "OK"}, status_code=200)
 
+
 @app.post("/api/contact", tags=["Contact"])
 async def contact(
     name: str = Form(...),
-    email: str = Form(...),
-    message: str = Form(...)
+    email: EmailStr = Form(...),
+    message: str = Form(...),
 ):
     """
     Endpoint to handle contact form submissions.
 
     Args:
         name (str): Name of the sender.
-        email (str): Email of the sender.
+        email (EmailStr): Email of the sender.
         message (str): Message from the sender.
     Returns: A JSON response indicating success or failure.
     """
     try:
-        # Create email message
-        msg = MIMEText(f"Name: {name}
-Email: {email}
-
-Message:
-{message}")
-        msg['Subject'] = f"Contact Form Submission from {name}"
-        msg['From'] = settings.SMTP_USERNAME
-        msg['To'] = "contact@getaisecured.com"
-
-        # Send email
-        with smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT) as server:
-            server.starttls()
-            server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-            server.send_message(msg)
-
+        # check the validity of the input
+        validate_contact(name, message)
+        # send the email
+        await send_contact_email(name, email, message)
         return JSONResponse(content={"status": "success"})
+    except HTTPException as e:
+        raise e
     except Exception as e:
         logger.error(f"Error sending contact email: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-

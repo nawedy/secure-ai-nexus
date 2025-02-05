@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 
-@router.get("/health", tags=["Health Check"])
+@router.get("/healthz", tags=["Health Check"])
 async def health_check():
     """
     Health check endpoint for Kubernetes probes
@@ -33,7 +33,19 @@ async def health_check():
         logger.error(f"Health check failed: {str(e)}")
         return Response(status_code=500)
 
-@router.get("/readiness", tags=["Health Check"])
+
+@router.get("/health", tags=["Health Check"])
+async def health_check():
+    """
+    Health check endpoint to see if the app is running.
+    """
+    try:
+        return {"status": "healthy"}
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return Response(status_code=500)
+
+@router.get("/ready", tags=["Health Check"])
 async def readiness_check():
     """
     Checks the readiness of the application.
@@ -48,7 +60,7 @@ async def readiness_check():
         # Check model service
         await check_model_service()
 
-        return {"status": "ready"}
+        return {"status": "healthy"}
     except Exception as e:
         logger.error(f"Readiness check failed: {str(e)}")
         return Response(status_code=503)

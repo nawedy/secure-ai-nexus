@@ -97,8 +97,16 @@ const rule: Rule.RuleModule = {
 
       return middlewareArg.elements.some(element =>
         element.type === 'Identifier' &&
-        AUTH_PATTERNS.authMiddleware.includes(element.name)
+        element.name &&
+        AUTH_PATTERNS.authMiddleware.includes(element.name) // Fix: Check if element.name exists
       );
+    };
+
+    const isString = (value: any): value is string => {
+      return typeof value === 'string';
+    };
+    const includesSensitiveOperation = (value: string): boolean => {
+        return AUTH_PATTERNS.sensitiveOperations.some(op => value.includes(op))
     };
 
     const isSensitiveOperation = (node: Node): boolean => {
@@ -152,11 +160,11 @@ const rule: Rule.RuleModule = {
           node.callee.property.type === 'Identifier' &&
           ['get', 'post', 'put', 'delete', 'patch'].includes(node.callee.property.name.toLowerCase())
         ) {
-          if (!hasAuthMiddleware(node)) {
+          if (!hasAuthMiddleware(node) ) {
             // Check if the route path indicates a sensitive operation
             const routePath = node.arguments[0];
             if (
-              routePath.type === 'Literal' &&
+             routePath?.type === 'Literal' &&
               typeof routePath.value === 'string' &&
               AUTH_PATTERNS.sensitiveOperations.some(op => routePath.value.includes(op))
             ) {

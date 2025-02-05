@@ -118,12 +118,13 @@ const rule: Rule.RuleModule = {
       });
     };
 
-    const checkRequestHandler = (node: Node) => {
+     const checkRequestHandler = (node: Node) => {
       let hasPydanticModel = false;
       let hasValidation = false;
-
+      
       // Look for Pydantic model usage
-      context.getAncestors().forEach(ancestor => {
+     
+        context.getAncestors().forEach(ancestor => {
         if (
           ancestor.type === 'ClassDeclaration' &&
           ancestor.superClass &&
@@ -151,7 +152,7 @@ const rule: Rule.RuleModule = {
       if (!hasValidation && !hasPydanticModel) {
         context.report({
           node,
-          messageId: 'missingValidation',
+          messageId: "missingValidation",
           data: { param: 'request data' },
         });
       }
@@ -165,9 +166,7 @@ const rule: Rule.RuleModule = {
         });
       },
 
-      // Check request handlers
-      FunctionDeclaration(node) {
-        if (
+       FunctionDeclaration(node) { if (
           node.id &&
           (
             node.id.name.toLowerCase().includes('handler') ||
@@ -178,6 +177,7 @@ const rule: Rule.RuleModule = {
           checkRequestHandler(node);
         }
       },
+
 
       // Check string literals for dangerous patterns
       Literal(node) {

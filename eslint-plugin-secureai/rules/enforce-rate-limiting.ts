@@ -2,7 +2,7 @@ import { Rule } from 'eslint';
 import { Node, CallExpression, Identifier, ImportDeclaration } from 'estree';
 
 const RATE_LIMIT_PATTERNS = {
-  pythonLibraries: {
+  pythonLibraries: { 
     recommended: [
       'fastapi.middleware.ratelimit',
       'starlette.middleware.ratelimit',
@@ -13,9 +13,9 @@ const RATE_LIMIT_PATTERNS = {
     ],
     configurations: {
       'fastapi': {
-        minDelay: 50,  // ms
-        maxRequests: 100,
-        perWindow: 60, // seconds
+        minDelay: '50',  // ms
+        maxRequests: '100',
+        perWindow: '60', // seconds
         burstSize: 5,
       },
       'flask': {
@@ -78,13 +78,20 @@ const rule: Rule.RuleModule = {
           if (prop.type === 'Property' && prop.key.type === 'Identifier') {
             // Check rate limit values
             if (prop.key.name === 'maxRequests' && prop.value.type === 'Literal') {
-              const maxRequests = prop.value.value as number;
-              if (maxRequests > RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests) {
-                context.report({
-                  node: prop,
-                  messageId: 'insufficientLimit',
-                  data: {
-                    current: maxRequests,
+              if (typeof prop.value.value === 'number') {
+                const maxRequests = prop.value.value;
+                if (maxRequests > RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests) {
+                  context.report({
+                    node: prop,
+                    messageId: 'insufficientLimit',
+                    data: {
+                      current: maxRequests,
+                      recommended: RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests,
+                    },
+                  });
+                }
+              }
+            }else if (typeof prop.value.value === 'string') {
                     recommended: RATE_LIMIT_PATTERNS.endpoints.api.standard.maxRequests,
                   },
                 });
@@ -92,13 +99,18 @@ const rule: Rule.RuleModule = {
             }
 
             // Check window size
-            if (prop.key.name === 'window' && prop.value.type === 'Literal') {
-              const window = prop.value.value as number;
-              if (window > 3600) {
-                context.report({
-                  node: prop,
-                  messageId: 'insecureWindow',
-                  data: { window },
+           if (prop.key.name === 'window' && prop.value.type === 'Literal') {
+               if(typeof prop.value.value === 'number'){
+                const window = prop.value.value;
+                if (window > 3600) {
+                  context.report({
+                    node: prop,
+                    messageId: 'insecureWindow',
+                    data: { window },
+                  });
+                }
+              } else if (typeof prop.value.value === 'string') {
+
                 });
               }
             }
@@ -175,7 +187,7 @@ const rule: Rule.RuleModule = {
       // Program exit
       'Program:exit'() {
         if (!hasGlobalRateLimit) {
-          context.report({
+              context.report({
             node: null,
             messageId: 'noGlobalLimit',
           });
@@ -192,6 +204,7 @@ const rule: Rule.RuleModule = {
           context.report({
             node: null,
             messageId: 'missingFallback',
+
           });
         }
       },

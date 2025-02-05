@@ -5,13 +5,19 @@ const UNSAFE_PATTERNS = {
   deserializationFuncs: [
     'pickle.loads',
     'yaml.load',
+    'yaml.safe_load',
     'json.loads',
     'marshal.loads',
     'ast.literal_eval',
     'eval',
     'exec',
-    'compile',
-  ],
+  ] as const,
+
+
+  
+} as const;
+
+const UNSAFE_PATTERNS = {
   safeAlternatives: {
     'pickle.loads': 'dill.loads with whitelist',
     'yaml.load': 'yaml.safe_load',
@@ -22,7 +28,7 @@ const UNSAFE_PATTERNS = {
     'exec': 'subprocess.run with restrictions',
   },
   securityChecks: [
-    'isinstance',
+     'isinstance',
     'type',
     'hasattr',
     'issubclass',
@@ -51,15 +57,19 @@ const rule: Rule.RuleModule = {
     const checkDeserializationCall = (node: CallExpression) => {
       const calleeText = context.getSourceCode().getText(node.callee);
 
+
+      const safeAlternatives = UNSAFE_PATTERNS.safeAlternatives as Record<string, string>;
+
       // Check for unsafe deserialization functions
-      UNSAFE_PATTERNS.deserializationFuncs.forEach(func => {
-        if (calleeText.includes(func)) {
-          context.report({
-            node,
-            messageId: 'unsafeDeserialization',
-            data: {
-              func,
-              alternative: UNSAFE_PATTERNS.safeAlternatives[func] || 'a safe alternative',
+      for (const func of UNSAFE_PATTERNS.deserializationFuncs) {
+          if (calleeText.includes(func)) {
+            const alternative = safeAlternatives[func] || 'a safe alternative';
+           context.report({
+             node,
+             messageId: 'unsafeDeserialization',
+             data: {
+               func,
+               alternative:alternative
             },
           });
         }
